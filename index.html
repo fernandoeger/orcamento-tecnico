@@ -4,12 +4,6 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Orçamento</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0b76ef">
-
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Orçamento Técnico">
 <style>
   /* Estilos Gerais */
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:980px;margin:18px auto;padding:12px}
@@ -40,8 +34,8 @@
   /* Estilos de Impressão (Gerar PDF) */
   @media print {
     body { margin: 0; padding: 0; max-width: none; font-size: 10pt; }
-    /* ATENÇÃO: A CLASSE 'maodeobra-print-hidden' FOI ADICIONADA AQUI */
-    .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print, .maodeobra-print-hidden { display: none !important; }
+    /* Oculta as seções de edição e botões */
+    .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
     /* Estiliza o cabeçalho e os campos de texto para impressão */
     input[type="text"], textarea { border: none !important; padding: 0; margin: 0; }
     label { margin-top: 0; font-weight: normal; }
@@ -66,20 +60,29 @@
   <label>Descrição do aparelho</label>
   <input id="descricaoAparelho" type="text" placeholder="Ex: Notebook Acer E5-511 / Desktop HP" />
 
-  <div class="section maodeobra-print-hidden">
-    <h3>Mão de Obra (Valor editável)</h3>
-    <table>
-        <thead><tr><th>Serviço (Mão de Obra)</th><th>Valor (R$)</th></tr></thead>
-        <tbody>
-            <tr><td>Custo Fixo de Mão de Obra/Serviço Técnico</td><td><input id="maoDeObraValor" class="valor maodeobra" type="number" min="0" step="0.01" value="120" /></td></tr>
-        </tbody>
+  <div class="section">
+    <h3>Serviços (valores editáveis)</h3>
+    <table id="servicosTable">
+      <thead><tr><th>Serviço</th><th>Valor (R$)</th></tr></thead>
+      <tbody>
+        <tr><td>Limpeza</td><td><input class="valor servico" data-item="Limpeza" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Formatação</td><td><input class="valor servico" data-item="Formatação" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Instalação de Windows</td><td><input class="valor servico" data-item="Instalação de Windows" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Backup de dados</td><td><input class="valor servico" data-item="Backup de dados" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Troca de pasta térmica</td><td><input class="valor servico" data-item="Troca de pasta térmica" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Reballing</td><td><input class="valor servico" data-item="Reballing" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Atualização de BIOS</td><td><input class="valor servico" data-item="Atualização de BIOS" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Diagnóstico</td><td><input class="valor servico" data-item="Diagnóstico" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Troca de teclado (mão de obra)</td><td><input class="valor servico" data-item="Troca de teclado (mão de obra)" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Instalação de drivers</td><td><input class="valor servico" data-item="Instalação de drivers" type="number" min="0" step="0.01" value="0" /></td></tr>
+      </tbody>
     </table>
   </div>
 
   <div class="section">
-    <h3>Peças (valores de custo editáveis)</h3>
+    <h3>Peças (valores editáveis)</h3>
     <table id="pecasTable">
-      <thead><tr><th>Peça</th><th>Valor de Custo (R$)</th></tr></thead>
+      <thead><tr><th>Peça</th><th>Valor (R$)</th></tr></thead>
       <tbody>
         <tr><td>SSD</td><td><input class="valor peca" data-item="SSD" type="number" min="0" step="0.01" value="0" /></td></tr>
         <tr><td>HD</td><td><input class="valor peca" data-item="HD" type="number" min="0" step="0.01" value="0" /></td></tr>
@@ -119,20 +122,27 @@
                 </tbody>
         </table>
     </div>
-
-    <p class="small ocultar-print">**Lucro de 25% fixo aplicado ao custo das Peças.**</p>
     
+    <label class="ocultar-print">Porcentagem de lucro (%)</label>
+    <div class="row ocultar-print">
+      <select id="percent" onchange="percentSelected(this)">
+        <option value="30">30%</option>
+        <option value="40">40%</option>
+        <option value="50" selected>50%</option>
+        <option value="60">60%</option>
+        <option value="70">70%</option>
+        <option value="0">0%</option>
+      </select>
+      <input id="percentCustom" type="number" min="0" max="500" step="1" placeholder="Outro (%)" oninput="percentCustomChanged(this)" />
+    </div>
+
     <label>Resumo Final</label>
     <table>
       <tbody>
-        <tr class="ocultar-print"><td> Custo das Peças </td><td class="right" id="custoPecas">R$ 0,00</td></tr>
-        <tr class="ocultar-print"><td> Lucro Peças (25%) </td><td class="right" id="lucroPecas">R$ 0,00</td></tr>
-        
-        <tr><td> Valor Final das Peças </td><td class="right" id="vendaPecas">R$ 0,00</td></tr>
-        <tr><td> Mão de Obra (Serviço Técnico) </td><td class="right" id="maoDeObraFinal">R$ 0,00</td></tr>
-        <tr><td> **TOTAL (R$)** </td><td class="right" id="vendaTotal"><strong>R$ 0,00</strong></td></tr>
-        
-        <tr class="ocultar-print"><td> Lucro Total (R$) </td><td class="right" id="lucroTotal">R$ 0,00</td></tr>
+        <tr><td> Custo total (Serviços + Peças) </td><td class="right" id="custo">R$ 0,00</td></tr>
+        <tr><td> Porcentagem de Lucro (%) </td><td class="right" id="porcent">0%</td></tr>
+        <tr><td> **TOTAL (R$)** </td><td class="right" id="venda"><strong>R$ 0,00</strong></td></tr>
+        <tr class="ocultar-print"><td> Lucro (R$) </td><td class="right" id="lucro">R$ 0,00</td></tr>
       </tbody>
     </table>
     
@@ -152,8 +162,6 @@
   </div>
 
 <script>
-const LUCRO_PECA = 0.25; // 25%
-
 function formatBR(value){
   return value.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
@@ -163,69 +171,54 @@ function sumValues(selector){
   return Array.from(nodes).map(i=>parseFloat(i.value||0)).reduce((a,b)=>a+b,0);
 }
 
-// Função para obter todos os itens com valor > 0
+function getSelectedPercent(){
+  const sel = document.getElementById('percent');
+  const custom = document.getElementById('percentCustom').value;
+  if(custom !== "") return parseFloat(custom)||0;
+  return parseFloat(sel.value)||0;
+}
+
+// NOVO: Função para obter todos os itens com valor > 0
 function getItensCobrados(){
     const itens = [];
-    const maoDeObra = parseFloat(document.getElementById('maoDeObraValor').value || 0);
-
-    // Adiciona Mão de Obra se for maior que zero
-    if (maoDeObra > 0) {
-        // A Mão de Obra é incluída na tabela de cobrança com seu valor final
-        itens.push({ nome: "Mão de Obra (Serviço Técnico)", valor: maoDeObra, tipo: 'maodeobra' });
-    }
+    const selectors = ['input.servico', 'input.peca'];
     
-    // Adiciona Peças (com lucro de 25%)
-    document.querySelectorAll('input.peca').forEach(input => {
-        const custo = parseFloat(input.value || 0);
-        if (custo > 0) {
-            const venda = custo * (1 + LUCRO_PECA);
-            const item = input.getAttribute('data-item');
-            let nome = item;
-            // Se for "Outros", usa o texto da descrição para o PDF
-            if (item === 'Outros' && document.getElementById('outrosDesc').value.trim() !== "") {
-                nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
+    selectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(input => {
+            const valor = parseFloat(input.value || 0);
+            if (valor > 0) {
+                const item = input.getAttribute('data-item');
+                let nome = item;
+                // Se for "Outros", usa o texto da descrição para o PDF
+                if (item === 'Outros' && document.getElementById('outrosDesc').value.trim() !== "") {
+                    nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
+                }
+                itens.push({ nome: nome, valor: valor });
             }
-            itens.push({ nome: nome, valor: venda, tipo: 'peca', custo: custo });
-        }
+        });
     });
     return itens;
 }
 
 function recalcular(){
-  const itens = getItensCobrados();
+  const totalServicos = sumValues('input.servico');
+  const totalPecas = sumValues('input.peca');
+  const custo = totalServicos + totalPecas;
+  const pct = getSelectedPercent();
+  const venda = custo * (1 + pct/100);
+  const lucro = venda - custo;
   
-  // 1. CÁLCULO DOS TOTAIS
-  let custoPecas = 0;
-  let vendaPecas = 0;
-  let lucroPecas = 0;
-  let maoDeObra = 0;
-  
-  itens.forEach(item => {
-      if (item.tipo === 'peca') {
-          custoPecas += item.custo;
-          vendaPecas += item.valor;
-      } else if (item.tipo === 'maodeobra') {
-          maoDeObra += item.valor;
-      }
-  });
-  
-  lucroPecas = vendaPecas - custoPecas;
-  
-  const vendaTotal = vendaPecas + maoDeObra;
-  const lucroTotal = lucroPecas + maoDeObra; // Mão de obra é lucro bruto nesse modelo
-  
-  // 2. ATUALIZA RESUMO
-  document.getElementById('custoPecas').innerText = 'R$ ' + formatBR(custoPecas);
-  document.getElementById('lucroPecas').innerText = 'R$ ' + formatBR(lucroPecas);
-  document.getElementById('vendaPecas').innerText = 'R$ ' + formatBR(vendaPecas);
-  document.getElementById('maoDeObraFinal').innerText = 'R$ ' + formatBR(maoDeObra);
-  document.getElementById('vendaTotal').innerText = 'R$ ' + formatBR(vendaTotal);
-  document.getElementById('lucroTotal').innerText = 'R$ ' + formatBR(lucroTotal);
+  // 1. ATUALIZA RESUMO
+  document.getElementById('custo').innerText = 'R$ ' + formatBR(custo);
+  document.getElementById('porcent').innerText = pct + '%';
+  document.getElementById('venda').innerText = 'R$ ' + formatBR(venda);
+  document.getElementById('lucro').innerText = 'R$ ' + formatBR(lucro);
 
-
-  // 3. MONTA A TABELA DE ITENS COBRADOS
+  // 2. MONTA A TABELA DE ITENS COBRADOS
   const tabelaCorpo = document.querySelector('#cobrancaTable tbody');
   tabelaCorpo.innerHTML = ''; // Limpa a tabela anterior
+  
+  const itens = getItensCobrados();
   
   if (itens.length > 0) {
       itens.forEach(item => {
@@ -241,18 +234,38 @@ function recalcular(){
       row.insertCell().innerText = '';
   }
   
-  // 4. ATUALIZA OBSERVAÇÕES PARA IMPRESSÃO
+  // 3. ATUALIZA OBSERVAÇÕES PARA IMPRESSÃO
   const obsText = document.getElementById('observacoes').value.trim();
   document.getElementById('obsContent').innerText = obsText;
   document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
 }
 
+function percentCustomChanged(input){
+  const customValue = input.value.trim();
+  const select = document.getElementById('percent');
+  
+  if(customValue !== "") {
+    // Se digitou algo no customizado, deseleciona o select
+    select.value = ""; 
+  } else {
+    // Se apagou o customizado, volta para o valor padrão (50%)
+    if (select.value === "") {
+        select.value = "50";
+    }
+  }
+  recalcular();
+}
+
+// NOVO: Função para o select (se mudar o select, zera o customizado)
+function percentSelected(select){
+    document.getElementById('percentCustom').value = "";
+    recalcular();
+}
+
 
 function attachListeners(){
   // Recalcula quando um valor é alterado
-  document.querySelectorAll('input.peca').forEach(el=>el.addEventListener('input', recalcular));
-  document.getElementById('maoDeObraValor').addEventListener('input', recalcular);
-  
+  document.querySelectorAll('input.valor').forEach(el=>el.addEventListener('input', recalcular));
   // Recalcula quando a descrição de "Outros" é alterada
   document.getElementById('outrosDesc').addEventListener('input', recalcular);
   // Garante que o campo de observações apareça corretamente no PDF
