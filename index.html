@@ -35,10 +35,10 @@
   /* Estilos de Impressão (Gerar PDF) */
   @media print {
     body { margin: 0; padding: 0; max-width: none; font-size: 10pt; }
-    /* Oculta as seções de edição e botões */
+    /* Oculta as seções de edição, botões e observações de rodapé */
     .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
 
-    /* 🔒 Oculta a porcentagem de lucro, custo total e lucro final no PDF */
+    /* Oculta a porcentagem de lucro, custo total e lucro final no resumo do PDF */
     tr:has(#porcent), tr:has(#custo), tr:has(#lucro) { display: none !important; }
 
     /* Garante que o orçamento final e a tabela de cobrança sejam exibidos */
@@ -48,7 +48,8 @@
       background: none; 
       margin-top: 20px; 
     }
-    .resumo-final table { border: 1px solid #333; }
+    /* No PDF, a tabela de resumo deve aparecer limpa, só com o Valor Venda */
+    .resumo-final table { border: 1px solid #333; margin-top: 15px; } 
     .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
 
     /* Mostra a tabela de ITENS ORÇADOS na impressão (cliente) */
@@ -67,12 +68,22 @@
     #cobrancaTable {
         border-collapse: collapse;
     }
-    /* Oculta a linha de lucro e a linha de total na tabela de cobrança na impressão */
+    /* Oculta a linha de lucro e a linha de total da tabela de itens na impressão */
     .tabela-cobranca tbody tr:last-child, /* Total Final */
     .tabela-cobranca tbody tr:nth-last-child(2) /* Margem de Lucro */
     {
       display: none !important; 
     }
+    
+    /* Força o resumo final a ter uma borda superior para separar do total da tabela de itens */
+    .resumo-final table {
+        border-top: 2px solid #333 !important;
+        margin-top: 0; /* Remove margem extra */
+        border: none; /* Remove todas as bordas do resumo, exceto a superior para clareza */
+    }
+    /* Garante que apenas o total final seja visível no resumo do PDF */
+    .resumo-final table tbody tr td { border: none !important; }
+    .resumo-final table tbody tr:has(#venda) td { border-top: 2px solid #333 !important; padding-top: 8px !important; }
   }
 </style>
 </head>
@@ -146,7 +157,7 @@
     <label class="ocultar-print">Porcentagem de lucro (%)</label>
     <div class="row ocultar-print">
       <select id="percent" onchange="percentSelected(this)">
-                <option value="30">30%</option>
+        <option value="30">30%</option>
         <option value="40">40%</option>
         <option value="50">50%</option>
         <option value="60">60%</option>
@@ -159,10 +170,10 @@
     <label>Resumo</label>
     <table>
       <tbody>
-        <tr><td> Custo total (Serviços + Peças) </td><td class="right" id="custo">R$ 0,00</td></tr>
+                <tr><td> Custo total (Serviços + Peças) </td><td class="right" id="custo">R$ 0,00</td></tr>
         <tr><td> Porcentagem (%) </td><td class="right" id="porcent">0%</td></tr>
-        <tr><td> **Valor venda (R$)** </td><td class="right" id="venda"><strong>R$ 0,00</strong></td></tr>
-        <tr class="ocultar-print"><td> Lucro (R$) </td><td class="right" id="lucro">R$ 0,00</td></tr>
+                <tr><td style="border: none;"> **Valor venda (R$)** </td><td class="right" id="venda"><strong>R$ 0,00</strong></td></tr>
+                <tr class="ocultar-print"><td> Lucro (R$) </td><td class="right" id="lucro">R$ 0,00</td></tr>
       </tbody>
     </table>
     
@@ -175,8 +186,7 @@
       Dica: preencha o campo "Cliente" e "Descrição do aparelho" antes de gerar o PDF. Use "Salvar como PDF" no diálogo de impressão.
     </footer>
   </div>
-  
-    <div class="section ocultar-print">
+      <div class="section ocultar-print">
       <label>Observações / Condições de Serviço (não aparece no resumo final)</label>
       <textarea id="observacoes" rows="3" placeholder="Ex: Garantia de 90 dias para serviço; Prazo de 3 dias úteis."></textarea>
   </div>
@@ -185,8 +195,7 @@
       <p style="font-weight: bold;">Observações:</p>
       <p id="obsContent" style="white-space: pre-wrap; margin-top: 5px;"></p>
   </div>
-
-<script>
+  <script>
 const PCT_LUCRO_PECAS = 25; // Lucro fixo de 25% nas peças
 
 function formatBR(value){
@@ -298,7 +307,7 @@ function recalcular(){
       // Adiciona a linha para mostrar o Lucro Geral restante (Serviços)
       if (lucroGeralRestante > 0.01) { 
           const rowLucro = tabelaCorpo.insertRow();
-          // O item de lucro agora é a margem geral de serviço, menos o que já foi embutido
+          // O item de lucro agora é a margem geral de serviço
           rowLucro.insertCell().innerText = 'Margem de Lucro Serviços (' + pctGeral + '%)';
           const valorLucroCell = rowLucro.insertCell();
           valorLucroCell.className = 'right';
@@ -332,7 +341,7 @@ function percentCustomChanged(input){
   const customValue = input.value.trim();
   const select = document.getElementById('percent');
   if(customValue !== "") select.value = ""; 
-  else if (select.value === "") select.value = "0"; // Alterado para 0% como fallback
+  else if (select.value === "") select.value = "0"; // 0% como fallback
   recalcular();
 }
 
