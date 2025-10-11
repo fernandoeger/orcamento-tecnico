@@ -29,10 +29,10 @@
   .item-desc{width:60%}
   .item-val{width:40%}
 
-  /* Tabela de itens cobrados (agora visível na tela e formatada para impressão) */
-  .tabela-cobranca{margin-top:20px; border-top: 1px solid #ddd; padding-top: 10px;}
+  /* Tabela de itens cobrados (oculta na tela, aparece no PDF) */
+  .tabela-cobranca{margin-top:20px;}
   .tabela-cobranca h3{margin-bottom: 5px; font-size: 1.15em; color: #333;}
-  #cobrancaTable th, #cobrancaTable td { padding: 8px; border-color: #ddd;}
+  #cobrancaTable th, #cobrancaTable td { padding: 6px 8px; border-color: #ddd;}
   #cobrancaTable th{background-color: #f2f2f2;}
   
   @media(max-width:700px){ .two-cols{flex-direction:column} .item-desc{width:100%} .item-val{width:100%} }
@@ -41,7 +41,7 @@
   @media print {
     body { margin: 0; padding: 20px; max-width: none; font-size: 11pt; color: #000; }
     /* Oculta todas as seções de edição, botões, etc. */
-    .ocultar-print, .section:not(.resumo-final):not(#printHeader), .btn, footer, .small, #outrosDesc { display: none !important; }
+    .ocultar-print, .section:not(.resumo-final):not(#printHeader), .btn, footer, .small, #observacoes { display: none !important; }
 
     /* Garante que o cabeçalho do PDF seja exibido e formatado */
     #printHeader {
@@ -55,15 +55,14 @@
     #printHeader h1 { font-size: 1.8rem; margin-bottom: 15px; border-bottom: 2px solid #ccc; padding-bottom: 5px; color: #000;}
     #printHeader p { margin: 4px 0; font-size: 1.05rem; }
     #printHeader strong { font-weight: bold; }
-    
+
     /* Oculta as linhas de custo, porcentagem e lucro no resumo do PDF (mantendo só o Valor Venda) */
     .resumo-final tr:has(#custo), .resumo-final tr:has(#porcent), .resumo-final tr:has(#lucro) { display: none !important; }
-
     /* Garante a exibição do resumo final, ajustando a borda do TOTAL */
     .resumo-final { border: none; padding: 0; background: none; margin-top: 20px; box-shadow: none; }
     .resumo-final table { border: none; margin-top: 15px; } 
-    .resumo-final td { border: none !important; padding: 8px 0; }
-    /* Borda no valor total (apenas a linha de TOTAL no final) */
+    .resumo-final th, .resumo-final td { border-color: #333; padding: 8px 0; }
+    /* Borda no valor total */
     .resumo-final table tbody tr:has(#venda) td { border-top: 2px solid #333 !important; padding-top: 10px !important; }
 
 
@@ -85,8 +84,10 @@
     #cobrancaTable th { background-color: #f0f0f0; color: #000; border-color: #333; padding: 8px; }
     #cobrancaTable td { border-color: #ddd; padding: 8px; }
     
-    /* Oculta a linha de total da tabela de itens na impressão, pois o total aparece no Resumo */
-    .tabela-cobranca tbody tr:last-child {
+    /* Oculta a linha de lucro e a linha de subtotal da tabela de itens na impressão */
+    #cobrancaTable tbody tr:last-child, /* Total Final */
+    #cobrancaTable tbody tr.lucro-servico /* Margem de Lucro */
+    {
       display: none !important; 
     }
     
@@ -115,9 +116,9 @@
   <input id="descricaoAparelho" type="text" placeholder="Ex: Notebook Acer E5-511 / Desktop HP" oninput="updatePrintHeader()"/>
 
   <div class="section">
-    <h3>Serviços (Custo/Valor base)</h3>
+    <h3>Serviços (Custo Base)</h3>
     <table id="servicosTable">
-      <thead><tr><th>Serviço</th><th>Valor (R$)</th></tr></thead>
+      <thead><tr><th>Serviço</th><th>Custo (R$)</th></tr></thead>
       <tbody>
         <tr><td>Limpeza</td><td><input class="valor servico" data-item="Limpeza" type="number" min="0" step="0.01" value="0" /></td></tr>
         <tr><td>Mão de Obra</td><td><input class="valor servico" data-item="Mão de Obra" type="number" min="0" step="0.01" value="120" /></td></tr>
@@ -134,9 +135,9 @@
   </div>
 
   <div class="section">
-    <h3>Peças (Custo/Valor base)</h3>
+    <h3>Peças (Custo Base)</h3>
     <table id="pecasTable">
-      <thead><tr><th>Peça</th><th>Valor (R$)</th></tr></thead>
+      <thead><tr><th>Peça</th><th>Custo (R$)</th></tr></thead>
       <tbody>
         <tr><td>SSD</td><td><input class="valor peca" data-item="SSD" type="number" min="0" step="0.01" value="0" /></td></tr>
         <tr><td>HD</td><td><input class="valor peca" data-item="HD" type="number" min="0" step="0.01" value="0" /></td></tr>
@@ -159,23 +160,23 @@
   </div>
   
   <div class="section ocultar-print">
-      <label>Observações / Condições de Serviço (para aparecer no orçamento)</label>
-      <textarea id="observacoes" rows="3" placeholder="Ex: Garantia de 90 dias para serviço; Prazo de 3 dias úteis."></textarea>
+    <label>Observações / Condições de Serviço (para aparecer no orçamento do cliente)</label>
+    <textarea id="observacoes" rows="3" placeholder="Ex: Garantia de 90 dias para serviço; Prazo de 3 dias úteis."></textarea>
   </div>
-
+  
   <div class="section resumo-final" style="margin-top:14px;">
     
     <div class="tabela-cobranca">
-        <h3>Itens Orçados</h3>
+        <h3>Itens Orçados (Para o Cliente)</h3>
         <table id="cobrancaTable">
             <thead>
-                <tr><th>Item</th><th class="right">Valor (R$)</th></tr>
+                <tr><th>Item</th><th class="right">Valor Cobrado (R$)</th></tr>
             </thead>
             <tbody></tbody>
         </table>
     </div>
     
-    <label class="ocultar-print">Porcentagem de lucro (%)</label>
+    <label class="ocultar-print">Porcentagem de lucro em **Serviços** (%)</label>
     <div class="row ocultar-print">
       <select id="percent" onchange="percentSelected(this)">
         <option value="30">30%</option>
@@ -183,27 +184,27 @@
         <option value="50" selected>50%</option>
         <option value="60">60%</option>
         <option value="70">70%</option>
-        <option value="0">0%</option>
+        <option value="0">0%</option> 
       </select>
       <input id="percentCustom" type="number" min="0" max="500" step="1" placeholder="Outro (%)" oninput="percentCustomChanged(this)" />
     </div>
 
-    <label>Resumo Final</label>
+    <label>Resumo Financeiro (Seu Controle)</label>
     <table>
       <tbody>
         <tr><td> Custo total (Serviços + Peças) </td><td class="right" id="custo">R$ 0,00</td></tr>
-        <tr><td> Porcentagem de Lucro Total (%) </td><td class="right" id="porcent">0%</td></tr>
-        <tr><td> **TOTAL (R$)** </td><td class="right" id="venda"><strong>R$ 0,00</strong></td></tr>
+        <tr><td> % Lucro Total (sobre o Custo) </td><td class="right" id="porcent">0%</td></tr>
+        <tr><td> **VALOR FINAL (R$)** </td><td class="right" id="venda"><strong>R$ 0,00</strong></td></tr>
         <tr class="ocultar-print"><td> Lucro (R$) </td><td class="right" id="lucro">R$ 0,00</td></tr>
       </tbody>
     </table>
     
-    <div id="observacoesPrint" class="ocultar-print" style="margin-top: 15px; font-size: 0.95rem;">
+    <div id="observacoesPrint" class="ocultar-print" style="margin-top: 25px; font-size: 0.95rem;">
         <p style="font-weight: bold;">Observações:</p>
         <p id="obsContent" style="white-space: pre-wrap; margin-top: 5px;"></p>
     </div>
 
-    <div style="margin-top:12px; text-align: right;">
+    <div style="margin-top:20px; text-align: right;">
       <button class="btn" onclick="prepararCalculo()">Calcular</button>
       <button class="btn secondary" onclick="prepararImpressao()">Gerar PDF / Imprimir</button>
     </div>
@@ -214,6 +215,11 @@
   </div>
 
 <script>
+// --- Constante de Lucro Fixo ---
+const PCT_LUCRO_PECAS = 25; // Lucro fixo de 25% (markup) sobre o custo das peças
+
+// --- Funções Auxiliares ---
+
 function formatBR(value){
   const numericValue = parseFloat(value) || 0;
   return numericValue.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
@@ -243,79 +249,88 @@ function getItensCobrados(){
                 if (item === 'Outros' && document.getElementById('outrosDesc').value.trim() !== "") {
                     nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
                 }
-                // Aqui o valor é o valor do item + a parcela de lucro proporcional
-                itens.push({ nome: nome, valor: valor });
+
+                // O valor guardado aqui é o CUSTO/BASE do item.
+                itens.push({ nome: nome, valor: valor, isPeca: input.classList.contains('peca') }); 
             }
         });
     });
     return itens;
 }
 
-function recalcular(){
-  const custo = sumValues('input.servico') + sumValues('input.peca');
-  const pct = getSelectedPercent();
-  const venda = custo * (1 + pct/100);
-  const lucro = venda - custo;
-  
-  // Atualiza o Resumo Financeiro
-  document.getElementById('custo').innerText = 'R$ ' + formatBR(custo);
-  document.getElementById('porcent').innerText = formatBR(pct) + '%';
-  document.getElementById('venda').innerText = 'R$ ' + formatBR(venda);
-  document.getElementById('lucro').innerText = 'R$ ' + formatBR(lucro);
 
-  // Atualiza a Tabela de Itens Orçados (Visível e usada na impressão)
+// --- Lógica Principal de Cálculo ---
+
+function recalcular(){
+  const pctServicos = getSelectedPercent();
+
+  // 1. Cálculo dos custos base
+  const custoServicos = sumValues('input.servico'); 
+  const custoPecas = sumValues('input.peca');
+  const custoTotal = custoServicos + custoPecas;
+
+  // 2. Cálculo do Lucro por Categoria
+  const lucroPecas = custoPecas * (PCT_LUCRO_PECAS / 100);
+  const lucroServicos = custoServicos * (pctServicos / 100);
+
+  // Lucro total (a soma dos lucros)
+  const lucroTotal = lucroPecas + lucroServicos;
+  
+  // 3. Cálculo do Valor Final (Venda)
+  const venda = custoTotal + lucroTotal;
+  
+  // 4. Atualização do Resumo Financeiro (Seu Controle)
+  document.getElementById('custo').innerText = 'R$ ' + formatBR(custoTotal);
+  // A porcentagem mostrada é o percentual de lucro total em relação ao custo total.
+  const porcentagemLucroReal = custoTotal > 0 ? (lucroTotal / custoTotal) * 100 : 0;
+  document.getElementById('porcent').innerText = formatBR(porcentagemLucroReal) + '%'; 
+  
+  document.getElementById('venda').innerText = 'R$ ' + formatBR(venda);
+  document.getElementById('lucro').innerText = 'R$ ' + formatBR(lucroTotal);
+
+  // 5. Preenche a Tabela de Cobrança (Para o Cliente)
   const tabelaCorpo = document.querySelector('#cobrancaTable tbody');
   tabelaCorpo.innerHTML = '';
-  const itens = getItensCobrados();
-  
+  const itens = getItensCobrados(); // Obtém os itens base (custo)
+  
   if (itens.length > 0) {
-      // Calcula a proporção do lucro a ser adicionada a CADA item
-      let totalBase = itens.reduce((sum, item) => sum + item.valor, 0);
-      let lucroPorItem = 0;
-      
-      // Preenche as linhas da tabela com o VALOR BASE + A PARCELA DE LUCRO
-      let totalCalculadoComLucro = 0;
-      
+      // Itera sobre os itens para montar a tabela de cobrança para o cliente
       itens.forEach(item => {
           const row = tabelaCorpo.insertRow();
           row.insertCell().innerText = item.nome;
           const valorCell = row.insertCell();
           valorCell.className = 'right';
-
-            // NOVO: Aplica o lucro sobre CADA item (proporcionalmente) para mostrar no orçamento
-            // Valor a ser exibido = Custo do Item * (1 + Porcentagem Total de Lucro)
-            // OBS: Como a porcentagem é aplicada no CUSTO TOTAL, para um valor correto
-            // na linha do item (se quisermos mostrar o valor final do item), 
-            // devemos aplicar a porcentagem total.
-            
-            // SE você quiser que o orçamento mostre apenas o CUSTO base do item:
-            let valorAPresentar = item.valor; 
-            
-            // SE você quiser que o orçamento mostre o CUSTO base DO ITEM + A PORCENTAGEM DE LUCRO
-            // let valorAPresentar = item.valor * (1 + pct/100); // Isso faria com que o total ficasse inflado se somado...
-            // Por simplicidade, vamos mostrar o CUSTO base, e o lucro será unificado no final.
-            // *Manteremos o código original (apenas o custo) para não inflar o total dos itens.*
-
-            valorAPresentar = item.valor; // Mantém o valor original (Custo/Valor base)
-          
-          valorCell.innerText = 'R$ ' + formatBR(valorAPresentar);
-          totalCalculadoComLucro += valorAPresentar;
+          
+          let valorNaTabela = item.valor;
+          
+          // Se for uma peça, aplica o lucro de 25% no valor mostrado ao cliente
+          if (item.isPeca) {
+              valorNaTabela = item.valor * (1 + PCT_LUCRO_PECAS / 100);
+          } 
+          // Se for um serviço, mostra o CUSTO base (o lucro de serviço é adicionado em uma linha separada)
+          
+          valorCell.innerText = 'R$ ' + formatBR(valorNaTabela);
       });
-      
-      // Linha de Lucro (visível na tela, mas oculta no PDF pelo CSS)
-      const rowLucro = tabelaCorpo.insertRow();
-      rowLucro.insertCell().innerText = 'Margem de Lucro (' + formatBR(pct) + '%)';
-      rowLucro.insertCell().innerHTML = '<td class="right">R$ ' + formatBR(lucro) + '</td>';
-      rowLucro.classList.add('ocultar-print-na-tabela'); // Nova classe para controle
 
-      // Linha de Total (visível na tela, mas oculta no PDF pelo CSS)
+
+      // Adiciona a linha para mostrar o Lucro Geral dos Serviços (se houver)
+      if (lucroServicos > 0.01) { 
+          const rowLucro = tabelaCorpo.insertRow();
+          rowLucro.classList.add('lucro-servico');
+          rowLucro.insertCell().innerText = 'Margem de Serviço (' + pctServicos + '%)';
+          const valorLucroCell = rowLucro.insertCell();
+          valorLucroCell.className = 'right';
+          valorLucroCell.innerText = 'R$ ' + formatBR(lucroServicos);
+      }
+
+      // Adiciona uma linha de total na tabela de cobrança para fechar o ciclo
       const rowTotal = tabelaCorpo.insertRow();
       rowTotal.style.fontWeight = 'bold';
       rowTotal.style.borderTop = '2px solid #333';
-      rowTotal.insertCell().innerText = 'Subtotal';
+      rowTotal.insertCell().innerText = 'TOTAL FINAL';
       const valorTotalCell = rowTotal.insertCell();
       valorTotalCell.className = 'right';
-      valorTotalCell.innerText = 'R$ ' + formatBR(custo); // Mostra o custo total antes do lucro
+      valorTotalCell.innerText = 'R$ ' + formatBR(venda); // Usa o valor de venda final calculado
       
   } else {
       const row = tabelaCorpo.insertRow();
@@ -323,11 +338,15 @@ function recalcular(){
       row.cells[0].colSpan = 2;
       row.cells[0].style.textAlign = 'center';
   }
-
+  
+  // 6. Atualiza as Observações para Impressão
   const obsText = document.getElementById('observacoes').value.trim();
   document.getElementById('obsContent').innerText = obsText;
   document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
 }
+
+
+// --- Funções de Evento (Input/Select) ---
 
 function percentCustomChanged(input){
   const customValue = input.value.trim();
@@ -360,10 +379,15 @@ function prepararImpressao() {
     window.print();
 }
 
+
+// --- Inicialização ---
+
 function attachListeners(){
   document.querySelectorAll('input.valor').forEach(el=>el.addEventListener('input', prepararCalculo));
   document.getElementById('outrosDesc').addEventListener('input', prepararCalculo);
   document.getElementById('observacoes').addEventListener('input', prepararCalculo);
+  document.getElementById('cliente').addEventListener('input', updatePrintHeader);
+  document.getElementById('descricaoAparelho').addEventListener('input', updatePrintHeader);
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{ attachListeners(); prepararCalculo(); });
