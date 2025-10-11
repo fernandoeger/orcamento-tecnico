@@ -24,6 +24,7 @@
   .two-cols > div{flex:1}
   .item-desc{width:60%}
   .item-val{width:40%}
+  /* REMOVEMOS A ESTRUTURA DA TABELA DE COBRANÇA para ficar como no layout da foto */
   .tabela-cobranca{margin-top:20px; border-top: 1px solid #ddd; padding-top: 10px;}
   .tabela-cobranca h3{margin-bottom: 0;}
   .tabela-cobranca table{border: 1px solid #ccc; border-radius: 4px; margin-bottom: 20px;}
@@ -37,18 +38,42 @@
     /* Oculta as seções de edição e botões */
     .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
 
-    /* 🔒 Oculta a porcentagem de lucro apenas no PDF */
-    tr:has(#porcent) { display: none !important; }
+    /* 🔒 Oculta a porcentagem de lucro e custo total no PDF para simplificar */
+    tr:has(#porcent), tr:has(#custo), tr:has(#lucro) { display: none !important; }
 
-    /* Garante que o orçamento final e a tabela de cobrança sejam exibidos */
+    /* Garante que o orçamento final seja exibido, adaptando para o layout sem a tabela de cobrança explícita */
     .resumo-final { 
       border: none; 
       padding: 0; 
       background: none; 
       margin-top: 20px; 
     }
-    .tabela-cobranca table, .resumo-final table { border: 1px solid #333; }
-    .tabela-cobranca th, .tabela-cobranca td, .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
+    .resumo-final table { border: 1px solid #333; }
+    .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
+
+    /* Mostra apenas a tabela de ITENS ORÇADOS na impressão, mas com um novo nome */
+    .tabela-cobranca {
+        display: block !important;
+        border: none !important;
+        padding: 0 !important;
+        margin-top: 15px !important;
+    }
+    .tabela-cobranca h3 {
+        display: block !important;
+        font-size: 1.1em;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+    #cobrancaTable {
+        border-collapse: collapse;
+    }
+    /* Oculta a linha de lucro e a linha de total na tabela de cobrança na impressão */
+    .tabela-cobranca tbody tr:last-child, /* Total Final */
+    .tabela-cobranca tbody tr:nth-last-child(2) /* Margem de Lucro */
+    {
+      display: none !important; 
+    }
+    
   }
 </style>
 </head>
@@ -78,7 +103,7 @@
         <tr><td>Atualização de BIOS</td><td><input class="valor servico" data-item="Atualização de BIOS" type="number" min="0" step="0.01" value="0" /></td></tr>
         <tr><td>Diagnóstico</td><td><input class="valor servico" data-item="Diagnóstico" type="number" min="0" step="0.01" value="0" /></td></tr>
         <tr><td>Instalação de drivers</td><td><input class="valor servico" data-item="Instalação de drivers" type="number" min="0" step="0.01" value="0" /></td></tr>
-        </tbody>
+      </tbody>
     </table>
   </div>
 
@@ -107,14 +132,9 @@
     <input id="outrosDesc" type="text" placeholder="Descreva peça/serviço se usar o campo 'Outros'"/>
   </div>
   
-  <div class="section ocultar-print">
-      <label>Observações / Condições de Serviço (não aparece no resumo final)</label>
-      <textarea id="observacoes" rows="3" placeholder="Ex: Garantia de 90 dias para serviço; Prazo de 3 dias úteis."></textarea>
-  </div>
-
   <div class="section resumo-final" style="margin-top:14px;">
     
-    <div class="tabela-cobranca">
+    <div class="tabela-cobranca ocultar-print">
         <h3>Itens Orçados</h3>
         <table id="cobrancaTable">
             <thead>
@@ -137,21 +157,16 @@
       <input id="percentCustom" type="number" min="0" max="500" step="1" placeholder="Outro (%)" oninput="percentCustomChanged(this)" />
     </div>
 
-    <label>Resumo Final</label>
+    <label>Resumo</label>
     <table>
       <tbody>
         <tr><td> Custo total (Serviços + Peças) </td><td class="right" id="custo">R$ 0,00</td></tr>
-        <tr><td> Porcentagem de Lucro (%) </td><td class="right" id="porcent">50%</td></tr>
-        <tr><td> **TOTAL (R$)** </td><td class="right" id="venda"><strong>R$ 0,00</strong></td></tr>
+        <tr><td> Porcentagem (%) </td><td class="right" id="porcent">50%</td></tr>
+        <tr><td> **Valor venda (R$)** </td><td class="right" id="venda"><strong>R$ 0,00</strong></td></tr>
         <tr class="ocultar-print"><td> Lucro (R$) </td><td class="right" id="lucro">R$ 0,00</td></tr>
       </tbody>
     </table>
     
-    <div id="observacoesPrint" style="margin-top: 15px; font-size: 0.95rem;">
-        <p style="font-weight: bold;">Observações:</p>
-        <p id="obsContent" style="white-space: pre-wrap; margin-top: 5px;"></p>
-    </div>
-
     <div style="margin-top:12px">
       <button class="btn" onclick="recalcular()">Calcular</button>
       <button class="btn secondary" onclick="window.print()">Gerar PDF / Imprimir</button>
@@ -160,6 +175,16 @@
     <footer class="ocultar-print">
       Dica: preencha o campo "Cliente" e "Descrição do aparelho" antes de gerar o PDF. Use "Salvar como PDF" no diálogo de impressão.
     </footer>
+  </div>
+  
+  <div class="section ocultar-print">
+      <label>Observações / Condições de Serviço (não aparece no resumo final)</label>
+      <textarea id="observacoes" rows="3" placeholder="Ex: Garantia de 90 dias para serviço; Prazo de 3 dias úteis."></textarea>
+  </div>
+  
+  <div id="observacoesPrint" style="margin-top: 15px; font-size: 0.95rem;">
+      <p style="font-weight: bold;">Observações:</p>
+      <p id="obsContent" style="white-space: pre-wrap; margin-top: 5px;"></p>
   </div>
 
 <script>
@@ -200,7 +225,7 @@ function getItensCobrados(){
 }
 
 function recalcular(){
-  // Lógica de cálculo antiga: soma todos os custos e aplica a porcentagem selecionada
+  // Lógica de cálculo: soma todos os custos e aplica a porcentagem selecionada
   const totalServicos = sumValues('input.servico');
   const totalPecas = sumValues('input.peca');
   const custo = totalServicos + totalPecas;
@@ -210,13 +235,13 @@ function recalcular(){
   const venda = custo * (1 + pct/100);
   const lucro = venda - custo;
   
-  // Atualiza o Resumo Final
+  // 1. Atualiza o Resumo Final (Visível)
   document.getElementById('custo').innerText = 'R$ ' + formatBR(custo);
-  document.getElementById('porcent').innerText = pct + '%'; // Exibe o % selecionado
+  document.getElementById('porcent').innerText = pct + '%'; 
   document.getElementById('venda').innerText = 'R$ ' + formatBR(venda);
   document.getElementById('lucro').innerText = 'R$ ' + formatBR(lucro);
 
-  // Atualiza a Tabela de Itens Orçados (Cobrança) com os valores de CUSTO
+  // 2. Preenche a Tabela de Cobrança (Oculta, usada só na impressão)
   const tabelaCorpo = document.querySelector('#cobrancaTable tbody');
   tabelaCorpo.innerHTML = '';
   const itens = getItensCobrados();
@@ -227,10 +252,9 @@ function recalcular(){
           row.insertCell().innerText = item.nome;
           const valorCell = row.insertCell();
           valorCell.className = 'right';
-          // Aqui o valor mostrado é o CUSTO base do item. O lucro é somado no total.
           valorCell.innerText = 'R$ ' + formatBR(item.valor); 
       });
-      // Adiciona uma linha para mostrar o lucro (se for diferente de zero)
+      // Adiciona a linha de lucro (oculta na impressão)
       if (lucro > 0.01) { 
           const rowLucro = tabelaCorpo.insertRow();
           rowLucro.insertCell().innerText = 'Margem de Lucro (' + pct + '%)';
@@ -238,7 +262,7 @@ function recalcular(){
           valorLucroCell.className = 'right';
           valorLucroCell.innerText = 'R$ ' + formatBR(lucro);
       }
-      // Adiciona uma linha de total na tabela de cobrança para fechar o ciclo
+      // Adiciona a linha de total (oculta na impressão)
       const rowTotal = tabelaCorpo.insertRow();
       rowTotal.style.fontWeight = 'bold';
       rowTotal.style.borderTop = '2px solid #333';
@@ -254,16 +278,7 @@ function recalcular(){
       row.cells[0].style.textAlign = 'center';
   }
   
-  // Oculta a linha de lucro na impressão (mantendo a regra original de impressão)
-  if (window.matchMedia('print').matches) {
-      document.querySelectorAll('.tabela-cobranca tbody tr').forEach(row => {
-          if (row.cells[0].innerText.includes('Margem de Lucro')) {
-              row.style.display = 'none';
-          }
-      });
-  }
-
-
+  // 3. Atualiza as Observações para Impressão
   const obsText = document.getElementById('observacoes').value.trim();
   document.getElementById('obsContent').innerText = obsText;
   document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
