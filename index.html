@@ -75,13 +75,11 @@
       display: none !important; 
     }
     
-    /* Força o resumo final a ter uma borda superior para separar do total da tabela de itens */
-    .resumo-final table {
-        border-top: 2px solid #333 !important;
-        margin-top: 0; /* Remove margem extra */
-        border: none; /* Remove todas as bordas do resumo, exceto a superior para clareza */
-    }
     /* Garante que apenas o total final seja visível no resumo do PDF */
+    .resumo-final table {
+        border: none; 
+        margin-top: 0;
+    }
     .resumo-final table tbody tr td { border: none !important; }
     .resumo-final table tbody tr:has(#venda) td { border-top: 2px solid #333 !important; padding-top: 8px !important; }
   }
