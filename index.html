@@ -3,90 +3,111 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Orçamento</title>
+<title>Orçamento Técnico</title>
 <style>
   /* Estilos Gerais */
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:980px;margin:18px auto;padding:12px}
-  h1{margin-bottom:6px}
-  label{display:block;margin-top:10px;font-weight:600}
-  input[type="text"], input[type="number"], select, textarea{width:100%;padding:8px;margin-top:6px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:980px;margin:18px auto;padding:12px;color:#333}
+  h1{margin-bottom:6px;color:#0b76ef;font-size: 1.8rem;}
+  label{display:block;margin-top:10px;font-weight:600;font-size:0.95rem;color:#444}
+  input[type="text"], input[type="number"], select, textarea{width:100%;padding:10px;margin-top:4px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box;font-size:1rem; background-color: #fff;}
   .row{display:flex;gap:8px}
   .row > *{flex:1}
-  .section{margin-top:14px;padding:12px;border:1px solid #eee;border-radius:8px;background:#fafafa}
+  .section{margin-top:18px;padding:15px;border:1px solid #ddd;border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+  .section h3{margin-top:0;font-size:1.15rem;color:#0b76ef;}
   table{width:100%;border-collapse:collapse;margin-top:8px}
-  th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}
+  th,td{padding:10px 8px;border-bottom:1px solid #eee;text-align:left}
+  th{background-color: #f7f7f7; font-weight: 700; color:#555}
   .right{text-align:right}
-  .btn{display:inline-block;padding:8px 12px;margin-top:10px;border-radius:6px;border:0;background:#0b76ef;color:white;cursor:pointer}
+  .btn{display:inline-block;padding:10px 18px;margin-top:12px;border-radius:6px;border:0;background:#0b76ef;color:white;cursor:pointer;font-weight:600;font-size:1rem;transition:background 0.2s}
+  .btn:hover{background:#0a68d0}
   .btn.secondary{background:#6c757d}
+  .btn.secondary:hover{background:#5a6268}
   .small{font-size:0.9rem;color:#555}
-  footer{margin-top:18px;font-size:0.85rem;color:#444;border-top:1px dashed #ddd;padding-top:12px}
+  footer{margin-top:20px;font-size:0.85rem;color:#777;border-top:1px dashed #ddd;padding-top:12px}
   .two-cols{display:flex;gap:12px}
   .two-cols > div{flex:1}
   .item-desc{width:60%}
   .item-val{width:40%}
-  /* Estrutura da Tabela de Cobrança (para o PDF) */
-  .tabela-cobranca{margin-top:20px; border-top: 1px solid #ddd; padding-top: 10px;}
-  .tabela-cobranca h3{margin-bottom: 0;}
-  .tabela-cobranca table{border: 1px solid #ccc; border-radius: 4px; margin-bottom: 20px;}
-  .tabela-cobranca th{background-color: #eee;}
+
+  /* Tabela de itens cobrados (oculta na tela, aparece no PDF) */
+  .tabela-cobranca{margin-top:20px;}
+  .tabela-cobranca h3{margin-bottom: 5px; font-size: 1.15em; color: #333;}
+  #cobrancaTable th, #cobrancaTable td { padding: 6px 8px; border-color: #ddd;}
+  #cobrancaTable th{background-color: #f2f2f2;}
   
   @media(max-width:700px){ .two-cols{flex-direction:column} .item-desc{width:100%} .item-val{width:100%} }
-
+  
   /* Estilos de Impressão (Gerar PDF) */
   @media print {
-    body { margin: 0; padding: 0; max-width: none; font-size: 10pt; }
-    /* Oculta as seções de edição, botões e observações de rodapé */
-    .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
+    body { margin: 0; padding: 20px; max-width: none; font-size: 11pt; color: #000; }
+    /* Oculta todas as seções de edição, botões, etc. */
+    .ocultar-print, .section:not(.resumo-final):not(#printHeader), .btn, footer, .small, #observacoes { display: none !important; }
 
-    /* Oculta a porcentagem de lucro, custo total e lucro final no resumo do PDF */
-    tr:has(#porcent), tr:has(#custo), tr:has(#lucro) { display: none !important; }
-
-    /* Garante que o orçamento final e a tabela de cobrança sejam exibidos */
-    .resumo-final { 
-      border: none; 
-      padding: 0; 
-      background: none; 
-      margin-top: 20px; 
+    /* Garante que o cabeçalho do PDF seja exibido e formatado */
+    #printHeader {
+      display: block !important;
+      padding: 0 !important;
+      border: none !important;
+      margin-bottom: 20px !important;
+      background: none !important;
+      box-shadow: none !important;
     }
-    /* No PDF, a tabela de resumo deve aparecer limpa, só com o Valor Venda */
-    .resumo-final table { border: 1px solid #333; margin-top: 15px; } 
-    .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
+    #printHeader h1 { font-size: 1.8rem; margin-bottom: 15px; border-bottom: 2px solid #ccc; padding-bottom: 5px; color: #000;}
+    #printHeader p { margin: 4px 0; font-size: 1.05rem; }
+    #printHeader strong { font-weight: bold; }
 
-    /* Mostra a tabela de ITENS ORÇADOS na impressão (cliente) */
+    /* Oculta as linhas de custo, porcentagem e lucro no resumo do PDF (mantendo só o Valor Venda) */
+    .resumo-final tr:has(#custo), .resumo-final tr:has(#porcent), .resumo-final tr:has(#lucro) { display: none !important; }
+    /* Garante a exibição do resumo final, ajustando a borda do TOTAL */
+    .resumo-final { border: none; padding: 0; background: none; margin-top: 20px; box-shadow: none; }
+    .resumo-final table { border: none; margin-top: 15px; } 
+    .resumo-final th, .resumo-final td { border-color: #333; padding: 8px 0; }
+    /* Borda no valor total */
+    .resumo-final table tbody tr:has(#venda) td { border-top: 2px solid #333 !important; padding-top: 10px !important; }
+
+
+    /* Mostra e formata a tabela de ITENS ORÇADOS na impressão (cliente) */
     .tabela-cobranca {
         display: block !important;
-        border: none !important;
-        padding: 0 !important;
+        border-top: 1px solid #ddd;
+        padding-top: 10px;
         margin-top: 15px !important;
     }
     .tabela-cobranca h3 {
         display: block !important;
-        font-size: 1.1em;
-        margin-bottom: 5px;
+        font-size: 1.4em;
+        margin-bottom: 10px;
         font-weight: bold;
+        color: #333;
     }
-    #cobrancaTable {
-        border-collapse: collapse;
-    }
+    #cobrancaTable { border: 1px solid #333; width: 100%; border-collapse: collapse; }
+    #cobrancaTable th { background-color: #f0f0f0; color: #000; border-color: #333; padding: 8px; }
+    #cobrancaTable td { border-color: #ddd; padding: 8px; }
+    
     /* Oculta a linha de lucro e a linha de total da tabela de itens na impressão */
     .tabela-cobranca tbody tr:last-child, /* Total Final */
     .tabela-cobranca tbody tr:nth-last-child(2) /* Margem de Lucro */
     {
       display: none !important; 
     }
-    
-    /* Garante que apenas o total final seja visível no resumo do PDF */
-    .resumo-final table {
-        border: none; 
-        margin-top: 0;
+    
+    /* Exibe as Observações na impressão */
+    #observacoesPrint {
+        display: block !important;
+        margin-top: 25px !important;
+        padding: 0;
     }
-    .resumo-final table tbody tr td { border: none !important; }
-    .resumo-final table tbody tr:has(#venda) td { border-top: 2px solid #333 !important; padding-top: 8px !important; }
   }
 </style>
 </head>
 <body>
-  <h1>Orçamento</h1>
+  <h1>Orçamento Técnico</h1>
+
+    <div id="printHeader" class="section ocultar-print">
+    <h1>Orçamento Técnico</h1>
+    <p>Cliente: <strong id="printCliente"></strong></p>
+    <p>Equipamento: <strong id="printAparelho"></strong></p>
+  </div>
 
   <label>Cliente</label>
   <input id="cliente" type="text" placeholder="Nome do cliente (opcional)" />
@@ -95,14 +116,12 @@
   <input id="descricaoAparelho" type="text" placeholder="Ex: Notebook Acer E5-511 / Desktop HP" />
 
   <div class="section">
-    <h3>Serviços (valores editáveis)</h3>
+    <h3>Serviços (custo base)</h3>
     <table id="servicosTable">
-      <thead><tr><th>Serviço</th><th>Valor (R$)</th></tr></thead>
+      <thead><tr><th>Serviço</th><th>Custo (R$)</th></tr></thead>
       <tbody>
         <tr><td>Limpeza</td><td><input class="valor servico" data-item="Limpeza" type="number" min="0" step="0.01" value="0" /></td></tr>
-        
         <tr><td>Mão de Obra</td><td><input class="valor servico" data-item="Mão de Obra" type="number" min="0" step="0.01" value="120" /></td></tr>
-        
         <tr><td>Formatação</td><td><input class="valor servico" data-item="Formatação" type="number" min="0" step="0.01" value="0" /></td></tr>
         <tr><td>Instalação de Windows</td><td><input class="valor servico" data-item="Instalação de Windows" type="number" min="0" step="0.01" value="0" /></td></tr>
         <tr><td>Backup de dados</td><td><input class="valor servico" data-item="Backup de dados" type="number" min="0" step="0.01" value="0" /></td></tr>
@@ -116,9 +135,9 @@
   </div>
 
   <div class="section">
-    <h3>Peças (valores editáveis)</h3>
+    <h3>Peças (custo base)</h3>
     <table id="pecasTable">
-      <thead><tr><th>Peça</th><th>Valor (R$)</th></tr></thead>
+      <thead><tr><th>Peça</th><th>Custo (R$)</th></tr></thead>
       <tbody>
         <tr><td>SSD</td><td><input class="valor peca" data-item="SSD" type="number" min="0" step="0.01" value="0" /></td></tr>
         <tr><td>HD</td><td><input class="valor peca" data-item="HD" type="number" min="0" step="0.01" value="0" /></td></tr>
@@ -142,59 +161,59 @@
   
     <div class="section resumo-final" style="margin-top:14px;">
     
-        <div class="tabela-cobranca ocultar-print">
+                <div class="tabela-cobranca ocultar-print">
         <h3>Itens Orçados</h3>
         <table id="cobrancaTable">
             <thead>
-                <tr><th>Item</th><th class="right">Valor (R$)</th></tr>
+                <tr><th>Item</th><th class="right">Valor Cobrado (R$)</th></tr>
             </thead>
             <tbody></tbody>
         </table>
     </div>
     
-    <label class="ocultar-print">Porcentagem de lucro (%)</label>
+    <label class="ocultar-print">Porcentagem de lucro em Serviços (%)</label>
     <div class="row ocultar-print">
       <select id="percent" onchange="percentSelected(this)">
         <option value="30">30%</option>
         <option value="40">40%</option>
-        <option value="50">50%</option>
+        <option value="50" selected>50%</option>
         <option value="60">60%</option>
         <option value="70">70%</option>
-        <option value="0" selected>0%</option> 
+        <option value="0">0%</option> 
       </select>
       <input id="percentCustom" type="number" min="0" max="500" step="1" placeholder="Outro (%)" oninput="percentCustomChanged(this)" />
     </div>
 
-    <label>Resumo</label>
+    <label>Resumo Financeiro</label>
     <table>
       <tbody>
                 <tr><td> Custo total (Serviços + Peças) </td><td class="right" id="custo">R$ 0,00</td></tr>
-        <tr><td> Porcentagem (%) </td><td class="right" id="porcent">0%</td></tr>
-                <tr><td style="border: none;"> **Valor venda (R$)** </td><td class="right" id="venda"><strong>R$ 0,00</strong></td></tr>
-                <tr class="ocultar-print"><td> Lucro (R$) </td><td class="right" id="lucro">R$ 0,00</td></tr>
+        <tr><td> % Lucro Total (sobre o Custo) </td><td class="right" id="porcent">0%</td></tr>
+                <tr><td style="border: none; font-size: 1.1em; padding-top: 15px;"> **Valor Total (R$)** </td><td class="right" id="venda" style="font-size: 1.1em; padding-top: 15px;"><strong>R$ 0,00</strong></td></tr>
+        <tr class="ocultar-print"><td> Lucro (R$) </td><td class="right" id="lucro">R$ 0,00</td></tr>
       </tbody>
     </table>
     
-    <div style="margin-top:12px">
+    <div style="margin-top:20px; text-align: right;">
       <button class="btn" onclick="recalcular()">Calcular</button>
-      <button class="btn secondary" onclick="window.print()">Gerar PDF / Imprimir</button>
+      <button class="btn secondary" onclick="prepararImpressao()">Gerar PDF / Imprimir</button>
     </div>
 
     <footer class="ocultar-print">
-      Dica: preencha o campo "Cliente" e "Descrição do aparelho" antes de gerar o PDF. Use "Salvar como PDF" no diálogo de impressão.
+      Dica: Preencha o "Cliente" e a "Descrição do aparelho" antes de gerar o PDF. Use "Salvar como PDF" no diálogo de impressão.
     </footer>
   </div>
-      <div class="section ocultar-print">
-      <label>Observações / Condições de Serviço (não aparece no resumo final)</label>
-      <textarea id="observacoes" rows="3" placeholder="Ex: Garantia de 90 dias para serviço; Prazo de 3 dias úteis."></textarea>
+  <div class="section ocultar-print">
+    <label>Observações / Condições de Serviço (para aparecer no orçamento do cliente)</label>
+    <textarea id="observacoes" rows="3" placeholder="Ex: Garantia de 90 dias para serviço; Prazo de 3 dias úteis."></textarea>
   </div>
   
-  <div id="observacoesPrint" style="margin-top: 15px; font-size: 0.95rem;">
-      <p style="font-weight: bold;">Observações:</p>
-      <p id="obsContent" style="white-space: pre-wrap; margin-top: 5px;"></p>
+  <div id="observacoesPrint" class="ocultar-print" style="margin-top: 25px; font-size: 0.95rem;">
+    <p style="font-weight: bold;">Observações:</p>
+    <p id="obsContent" style="white-space: pre-wrap; margin-top: 5px;"></p>
   </div>
   <script>
-const PCT_LUCRO_PECAS = 25; // Lucro fixo de 25% nas peças
+const PCT_LUCRO_PECAS = 25; // Lucro fixo de 25% nas peças (25% sobre o custo da peça)
 
 function formatBR(value){
   const numericValue = parseFloat(value) || 0;
@@ -202,10 +221,8 @@ function formatBR(value){
 }
 
 /**
- * Soma os valores de todos os inputs que correspondem ao seletor CSS fornecido.
- * @param {string} selector - O seletor CSS para encontrar os elementos de input.
- * @returns {number} - A soma total dos valores de CUSTO.
- */
+ * Soma os valores de todos os inputs que correspondem ao seletor CSS fornecido.
+ */
 function sumValues(selector){
   const nodes = document.querySelectorAll(selector);
   return Array.from(nodes).map(i=>parseFloat(i.value||0)).reduce((a,b)=>a+b,0);
@@ -233,7 +250,7 @@ function getItensCobrados(){
                 }
 
                 // O valor guardado aqui é o CUSTO/BASE do item.
-                itens.push({ nome: nome, valor: valor, isPeca: input.classList.contains('peca') }); 
+                itens.push({ nome: nome, valor: valor, isPeca: input.classList.contains('peca') }); 
             }
         });
     });
@@ -245,20 +262,20 @@ function recalcular(){
   const pctGeral = getSelectedPercent();
 
   // 1. Cálculo dos custos base
-  const custoServicos = sumValues('input.servico'); 
+  const custoServicos = sumValues('input.servico'); 
   const custoPecas = sumValues('input.peca');
   const custoTotal = custoServicos + custoPecas;
 
   // 2. Cálculo do Lucro por Categoria
-  // Lucro Fixo nas peças (25%)
+  // Lucro Fixo nas peças (25% sobre o custo da peça)
   const lucroPecas = custoPecas * (PCT_LUCRO_PECAS / 100);
-  
+  
   // Lucro Geral nos Serviços (Mão de Obra incluída)
   const lucroServicos = custoServicos * (pctGeral / 100);
 
   // Lucro total (a soma dos lucros)
   const lucroTotal = lucroPecas + lucroServicos;
-  
+  
   // 3. Cálculo do Valor Final (Venda)
   const venda = custoTotal + lucroTotal;
   
@@ -266,8 +283,8 @@ function recalcular(){
   document.getElementById('custo').innerText = 'R$ ' + formatBR(custoTotal);
   // A porcentagem mostrada é o percentual de lucro total em relação ao custo total.
   const porcentagemLucroReal = custoTotal > 0 ? (lucroTotal / custoTotal) * 100 : 0;
-  document.getElementById('porcent').innerText = formatBR(porcentagemLucroReal) + '%'; 
-  
+  document.getElementById('porcent').innerText = formatBR(porcentagemLucroReal) + '%'; 
+  
   document.getElementById('venda').innerText = 'R$ ' + formatBR(venda);
   document.getElementById('lucro').innerText = 'R$ ' + formatBR(lucroTotal);
 
@@ -275,7 +292,7 @@ function recalcular(){
   const tabelaCorpo = document.querySelector('#cobrancaTable tbody');
   tabelaCorpo.innerHTML = '';
   const itens = getItensCobrados(); // Obtém os itens base (custo)
-  
+  
   let valorTotalItensCobrados = 0;
 
   if (itens.length > 0) {
@@ -284,9 +301,9 @@ function recalcular(){
           row.insertCell().innerText = item.nome;
           const valorCell = row.insertCell();
           valorCell.className = 'right';
-          
+          
           let valorNaTabela = item.valor;
-          
+          
           // Se for uma peça, aplica o lucro de 25% no valor mostrado ao cliente
           if (item.isPeca) {
               valorNaTabela = item.valor * (1 + PCT_LUCRO_PECAS / 100);
@@ -294,23 +311,23 @@ function recalcular(){
               // Se for um serviço, mostra o CUSTO base
               valorNaTabela = item.valor;
           }
-          
+          
           valorTotalItensCobrados += valorNaTabela;
           valorCell.innerText = 'R$ ' + formatBR(valorNaTabela);
       });
 
-      // Lucro Geral (somente a parte dos serviços)
-      const lucroGeralRestante = custoServicos * (pctGeral / 100);
+      // Lucro Geral (somente a parte dos serviços)
+      const lucroGeralRestante = custoServicos * (pctGeral / 100);
 
       // Adiciona a linha para mostrar o Lucro Geral restante (Serviços)
-      if (lucroGeralRestante > 0.01) { 
+      if (lucroGeralRestante > 0.01) { 
           const rowLucro = tabelaCorpo.insertRow();
-          // O item de lucro agora é a margem geral de serviço
+          // O item de lucro agora é a margem geral de serviço
           rowLucro.insertCell().innerText = 'Margem de Lucro Serviços (' + pctGeral + '%)';
           const valorLucroCell = rowLucro.insertCell();
           valorLucroCell.className = 'right';
           valorLucroCell.innerText = 'R$ ' + formatBR(lucroGeralRestante);
-          valorTotalItensCobrados += lucroGeralRestante;
+          valorTotalItensCobrados += lucroGeralRestante;
       }
 
       // Adiciona uma linha de total na tabela de cobrança para fechar o ciclo
@@ -321,11 +338,11 @@ function recalcular(){
       const valorTotalCell = rowTotal.insertCell();
       valorTotalCell.className = 'right';
       valorTotalCell.innerText = 'R$ ' + formatBR(venda); // Usa o valor de venda final calculado
-      
+      
   } else {
       const row = tabelaCorpo.insertRow();
       row.insertCell().innerText = 'Nenhum item/serviço cobrado.';
-      row.insertCell().colSpan = 2;
+      row.cells[0].colSpan = 2;
       row.cells[0].style.textAlign = 'center';
   }
   
@@ -348,20 +365,45 @@ function percentSelected(select){
     recalcular();
 }
 
+// NOVO: Função para preencher o cabeçalho de impressão
+function updatePrintHeader() {
+    const cliente = document.getElementById('cliente').value.trim() || 'Não Informado';
+    const aparelho = document.getElementById('descricaoAparelho').value.trim() || 'Não Informado';
+
+    document.getElementById('printCliente').innerText = cliente;
+    document.getElementById('printAparelho').innerText = aparelho;
+}
+
+// NOVO: Função chamada no botão Gerar PDF
+function prepararImpressao() {
+    // 1. Garante que os valores e as tabelas estejam atualizados
+    recalcular();
+    // 2. Atualiza o cabeçalho de impressão com os dados do cliente
+    updatePrintHeader();
+    // 3. Dispara a impressão
+    window.print();
+}
+
+
 function attachListeners(){
   document.querySelectorAll('input.valor').forEach(el=>el.addEventListener('input', recalcular));
   document.getElementById('outrosDesc').addEventListener('input', recalcular);
   document.getElementById('observacoes').addEventListener('input', recalcular);
-  document.getElementById('cliente').addEventListener('input', ()=>{});
-  document.getElementById('descricaoAparelho').addEventListener('input', ()=>{});
+  // Adiciona listener para atualizar o cabeçalho do PDF ao digitar
+  document.getElementById('cliente').addEventListener('input', updatePrintHeader);
+  document.getElementById('descricaoAparelho').addEventListener('input', updatePrintHeader);
 }
 
-document.addEventListener('DOMContentLoaded', ()=>{ attachListeners(); recalcular(); });
+document.addEventListener('DOMContentLoaded', ()=>{ 
+  attachListeners(); 
+  // O valor "50" está no HTML, mas garantimos o recálculo inicial
+  recalcular(); 
+});
 
 window.addEventListener('keydown', function(e){
-  if((e.ctrlKey||e.metaKey) && e.key === 's'){
+  if((e.ctrlKey||e.metaKey) && e.key === 'p'){ 
     e.preventDefault();
-    window.print();
+    prepararImpressao(); // Usa a nova função de preparação
   }
 });
 </script>
