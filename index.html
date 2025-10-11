@@ -14,6 +14,44 @@
   .row > *{flex:1}
   .section{margin-top:18px;padding:15px;border:1px solid #ddd;border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
   .section h3{margin-top:0;font-size:1.15rem;color:#0b76ef;}
+
+  /* Estilos para o novo layout de lista em duas colunas */
+  #servicosContainer, #pecasContainer {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Duas colunas */
+    gap: 15px;
+    margin-top: 10px;
+  }
+
+  .item-block {
+    display: flex; /* Alinha o label e o input na mesma linha */
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .item-block label {
+    /* Sobrescreve o estilo padrão de 'label' */
+    display: inline-block;
+    margin-top: 0;
+    font-weight: 500;
+    color: #333;
+    font-size: 1rem;
+    flex-grow: 1;
+    text-align: left;
+  }
+
+  .item-block input[type="number"] {
+    /* Sobrescreve o estilo padrão de 'input' */
+    width: 100px; /* Largura menor para o campo de valor */
+    text-align: right;
+    flex-shrink: 0;
+    padding: 8px; 
+    margin-top: 0;
+  }
+  /* Fim dos estilos para o novo layout */
+
+  /* Estilos de Tabela para o Resumo e Cobrança (que continuam tabelas) */
   table{width:100%;border-collapse:collapse;margin-top:8px}
   th,td{padding:10px 8px;border-bottom:1px solid #eee;text-align:left}
   th{background-color: #f7f7f7; font-weight: 700; color:#555}
@@ -35,13 +73,26 @@
   #cobrancaTable th, #cobrancaTable td { padding: 6px 8px; border-color: #ddd;}
   #cobrancaTable th{background-color: #f2f2f2;}
   
-  @media(max-width:700px){ .two-cols{flex-direction:column} .item-desc{width:100%} .item-val{width:100%} }
+  @media(max-width:700px){ 
+    .two-cols{flex-direction:column} 
+    .item-desc{width:100%} 
+    .item-val{width:100%} 
+    /* Garante que em telas pequenas volte a ser uma coluna nas seções */
+    #servicosContainer, #pecasContainer {
+        grid-template-columns: 1fr; 
+        gap: 8px;
+    }
+    .item-block input[type="number"] {
+        width: 120px;
+    }
+}
   
   /* Estilos de Impressão (Gerar PDF) */
   @media print {
     body { margin: 0; padding: 20px; max-width: none; font-size: 11pt; color: #000; }
     /* Oculta todas as seções de edição, botões, etc. */
-    .ocultar-print, .section:not(.resumo-final):not(#printHeader), .btn, footer, .small, #observacoes { display: none !important; }
+    /* Garante que as seções de edição (agora em div blocks) sejam ocultadas */
+    .ocultar-print, .section:not(.resumo-final):not(#printHeader), .btn, footer, .small, #observacoes, #servicosContainer, #pecasContainer { display: none !important; }
 
     /* Garante que o cabeçalho do PDF seja exibido e formatado */
     #printHeader {
@@ -117,44 +168,110 @@
 
   <div class="section">
     <h3>Serviços (Custo Base)</h3>
-    <table id="servicosTable">
-      <thead><tr><th>Serviço</th><th>Custo (R$)</th></tr></thead>
-      <tbody>
-        <tr><td>Limpeza</td><td><input class="valor servico" data-item="Limpeza" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Mão de Obra</td><td><input class="valor servico" data-item="Mão de Obra" type="number" min="0" step="0.01" value="120" /></td></tr>
-        <tr><td>Formatação</td><td><input class="valor servico" data-item="Formatação" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Instalação de Windows</td><td><input class="valor servico" data-item="Instalação de Windows" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Backup de dados</td><td><input class="valor servico" data-item="Backup de dados" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Troca de pasta térmica</td><td><input class="valor servico" data-item="Troca de pasta térmica" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Reballing</td><td><input class="valor servico" data-item="Reballing" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Atualização de BIOS</td><td><input class="valor servico" data-item="Atualização de BIOS" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Diagnóstico</td><td><input class="valor servico" data-item="Diagnóstico" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Instalação de drivers</td><td><input class="valor servico" data-item="Instalação de drivers" type="number" min="0" step="0.01" value="0" /></td></tr>
-      </tbody>
-    </table>
+    <div id="servicosContainer">
+        <div class="item-block">
+            <label>Limpeza</label>
+            <input class="valor servico" data-item="Limpeza" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Mão de Obra</label>
+            <input class="valor servico" data-item="Mão de Obra" type="number" min="0" step="0.01" value="120" />
+        </div>
+        <div class="item-block">
+            <label>Formatação</label>
+            <input class="valor servico" data-item="Formatação" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Instalação de Windows</label>
+            <input class="valor servico" data-item="Instalação de Windows" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Backup de dados</label>
+            <input class="valor servico" data-item="Backup de dados" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Troca de pasta térmica</label>
+            <input class="valor servico" data-item="Troca de pasta térmica" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Reballing</label>
+            <input class="valor servico" data-item="Reballing" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Atualização de BIOS</label>
+            <input class="valor servico" data-item="Atualização de BIOS" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Diagnóstico</label>
+            <input class="valor servico" data-item="Diagnóstico" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Instalação de drivers</label>
+            <input class="valor servico" data-item="Instalação de drivers" type="number" min="0" step="0.01" value="0" />
+        </div>
+    </div>
   </div>
 
   <div class="section">
     <h3>Peças (Custo Base)</h3>
-    <table id="pecasTable">
-      <thead><tr><th>Peça</th><th>Custo (R$)</th></tr></thead>
-      <tbody>
-        <tr><td>SSD</td><td><input class="valor peca" data-item="SSD" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>HD</td><td><input class="valor peca" data-item="HD" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>RAM</td><td><input class="valor peca" data-item="RAM" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Teclado</td><td><input class="valor peca" data-item="Teclado" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Tela / Display</td><td><input class="valor peca" data-item="Tela" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Bateria</td><td><input class="valor peca" data-item="Bateria" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Cooler / Ventoinha</td><td><input class="valor peca" data-item="Cooler" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>DC Jack</td><td><input class="valor peca" data-item="DC Jack" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Fonte (PSU)</td><td><input class="valor peca" data-item="Fonte" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Placa-mãe</td><td><input class="valor peca" data-item="Placa-mãe" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Carcaça / Gabinete</td><td><input class="valor peca" data-item="Carcaça" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Flat / Cabo Flat</td><td><input class="valor peca" data-item="Flat" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Placa de vídeo (GPU)</td><td><input class="valor peca" data-item="GPU" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Outros (descrição abaixo)</td><td><input class="valor peca" data-item="Outros" type="number" min="0" step="0.01" value="0" /></td></tr>
-      </tbody>
-    </table>
+    <div id="pecasContainer">
+        <div class="item-block">
+            <label>SSD</label>
+            <input class="valor peca" data-item="SSD" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>HD</label>
+            <input class="valor peca" data-item="HD" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>RAM</label>
+            <input class="valor peca" data-item="RAM" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Teclado</label>
+            <input class="valor peca" data-item="Teclado" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Tela / Display</label>
+            <input class="valor peca" data-item="Tela" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Bateria</label>
+            <input class="valor peca" data-item="Bateria" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Cooler / Ventoinha</label>
+            <input class="valor peca" data-item="Cooler" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>DC Jack</label>
+            <input class="valor peca" data-item="DC Jack" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Fonte (PSU)</label>
+            <input class="valor peca" data-item="Fonte" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Placa-mãe</label>
+            <input class="valor peca" data-item="Placa-mãe" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Carcaça / Gabinete</label>
+            <input class="valor peca" data-item="Carcaça" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Flat / Cabo Flat</label>
+            <input class="valor peca" data-item="Flat" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Placa de vídeo (GPU)</label>
+            <input class="valor peca" data-item="GPU" type="number" min="0" step="0.01" value="0" />
+        </div>
+        <div class="item-block">
+            <label>Outros (descrição abaixo)</label>
+            <input class="valor peca" data-item="Outros" type="number" min="0" step="0.01" value="0" />
+        </div>
+    </div>
     <label>Descrição para "Outros"</label>
     <input id="outrosDesc" type="text" placeholder="Descreva peça/serviço se usar o campo 'Outros'"/>
   </div>
@@ -193,7 +310,7 @@
     <table>
       <tbody>
         <tr><td> Custo total (Serviços + Peças) </td><td class="right" id="custo">R$ 0,00</td></tr>
-        <tr><td> % Lucro Total (sobre o Custo) </td><td class="right" id="porcent">0%</td></tr>
+        <tr><td> % Lucro em Serviços (Selecionado) </td><td class="right" id="porcent">50%</td></tr>
         <tr><td> **VALOR FINAL (R$)** </td><td class="right" id="venda"><strong>R$ 0,00</strong></td></tr>
         <tr class="ocultar-print"><td> Lucro (R$) </td><td class="right" id="lucro">R$ 0,00</td></tr>
       </tbody>
@@ -281,9 +398,8 @@ function recalcular(){
   
   // 4. Atualização do Resumo Financeiro (Seu Controle)
   document.getElementById('custo').innerText = 'R$ ' + formatBR(custoTotal);
-  // A porcentagem mostrada é o percentual de lucro total em relação ao custo total.
-  const porcentagemLucroReal = custoTotal > 0 ? (lucroTotal / custoTotal) * 100 : 0;
-  document.getElementById('porcent').innerText = formatBR(porcentagemLucroReal) + '%'; 
+  // Mostra o percentual de lucro de Serviços (o selecionado)
+  document.getElementById('porcent').innerText = formatBR(pctServicos) + '%'; 
   
   document.getElementById('venda').innerText = 'R$ ' + formatBR(venda);
   document.getElementById('lucro').innerText = 'R$ ' + formatBR(lucroTotal);
@@ -303,17 +419,22 @@ function recalcular(){
           
           let valorNaTabela = item.valor;
           
-          // Se for uma peça, aplica o lucro de 25% no valor mostrado ao cliente
+          // Se for uma peça, aplica o lucro de 25%
           if (item.isPeca) {
               valorNaTabela = item.valor * (1 + PCT_LUCRO_PECAS / 100);
-          } 
-          // Se for um serviço, mostra o CUSTO base (o lucro de serviço é adicionado em uma linha separada)
+          }
+          // Se for um serviço, aplica o lucro selecionado
+          else { 
+              valorNaTabela = item.valor * (1 + pctServicos / 100);
+          }
           
           valorCell.innerText = 'R$ ' + formatBR(valorNaTabela);
       });
 
 
-      // Adiciona a linha para mostrar o Lucro Geral dos Serviços (se houver)
+      // Removemos a linha "Margem de Serviço" (lucroServicos > 0.01) para integrar o valor
+      // (Se quiser colocar de volta o Lucro de Serviço em linha separada, descomente esta seção)
+      /*
       if (lucroServicos > 0.01) { 
           const rowLucro = tabelaCorpo.insertRow();
           rowLucro.classList.add('lucro-servico');
@@ -322,6 +443,8 @@ function recalcular(){
           valorLucroCell.className = 'right';
           valorLucroCell.innerText = 'R$ ' + formatBR(lucroServicos);
       }
+      */
+
 
       // Adiciona uma linha de total na tabela de cobrança para fechar o ciclo
       const rowTotal = tabelaCorpo.insertRow();
@@ -370,13 +493,13 @@ function updatePrintHeader() {
 }
 
 function prepararCalculo() {
-    recalcular();
-    updatePrintHeader();
+    recalcular();
+    updatePrintHeader();
 }
 
 function prepararImpressao() {
-    prepararCalculo(); // Garante que tudo está calculado e os cabeçalhos atualizados
-    window.print();
+    prepararCalculo(); // Garante que tudo está calculado e os cabeçalhos atualizados
+    window.print();
 }
 
 
@@ -388,6 +511,9 @@ function attachListeners(){
   document.getElementById('observacoes').addEventListener('input', prepararCalculo);
   document.getElementById('cliente').addEventListener('input', updatePrintHeader);
   document.getElementById('descricaoAparelho').addEventListener('input', updatePrintHeader);
+  // O percentual deve acionar o cálculo
+  document.getElementById('percent').addEventListener('change', prepararCalculo);
+  document.getElementById('percentCustom').addEventListener('input', prepararCalculo);
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{ attachListeners(); prepararCalculo(); });
