@@ -36,9 +36,10 @@
     body { margin: 0; padding: 0; max-width: none; font-size: 10pt; }
     /* Oculta as seções de edição e botões */
     .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
-    /* Estiliza o cabeçalho e os campos de texto para impressão */
-    input[type="text"], textarea { border: none !important; padding: 0; margin: 0; }
-    label { margin-top: 0; font-weight: normal; }
+
+    /* 🔒 Oculta a porcentagem de lucro apenas no PDF */
+    tr:has(#porcent) { display: none !important; }
+
     /* Garante que o orçamento final e a tabela de cobrança sejam exibidos */
     .resumo-final { 
       border: none; 
@@ -109,7 +110,6 @@
       <textarea id="observacoes" rows="3" placeholder="Ex: Garantia de 90 dias para serviço; Prazo de 3 dias úteis."></textarea>
   </div>
 
-
   <div class="section resumo-final" style="margin-top:14px;">
     
     <div class="tabela-cobranca">
@@ -118,8 +118,7 @@
             <thead>
                 <tr><th>Item</th><th class="right">Valor (R$)</th></tr>
             </thead>
-            <tbody>
-                </tbody>
+            <tbody></tbody>
         </table>
     </div>
     
@@ -178,18 +177,15 @@ function getSelectedPercent(){
   return parseFloat(sel.value)||0;
 }
 
-// NOVO: Função para obter todos os itens com valor > 0
 function getItensCobrados(){
     const itens = [];
     const selectors = ['input.servico', 'input.peca'];
-    
     selectors.forEach(selector => {
         document.querySelectorAll(selector).forEach(input => {
             const valor = parseFloat(input.value || 0);
             if (valor > 0) {
                 const item = input.getAttribute('data-item');
                 let nome = item;
-                // Se for "Outros", usa o texto da descrição para o PDF
                 if (item === 'Outros' && document.getElementById('outrosDesc').value.trim() !== "") {
                     nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
                 }
@@ -208,18 +204,14 @@ function recalcular(){
   const venda = custo * (1 + pct/100);
   const lucro = venda - custo;
   
-  // 1. ATUALIZA RESUMO
   document.getElementById('custo').innerText = 'R$ ' + formatBR(custo);
   document.getElementById('porcent').innerText = pct + '%';
   document.getElementById('venda').innerText = 'R$ ' + formatBR(venda);
   document.getElementById('lucro').innerText = 'R$ ' + formatBR(lucro);
 
-  // 2. MONTA A TABELA DE ITENS COBRADOS
   const tabelaCorpo = document.querySelector('#cobrancaTable tbody');
-  tabelaCorpo.innerHTML = ''; // Limpa a tabela anterior
-  
+  tabelaCorpo.innerHTML = '';
   const itens = getItensCobrados();
-  
   if (itens.length > 0) {
       itens.forEach(item => {
           const row = tabelaCorpo.insertRow();
@@ -233,8 +225,7 @@ function recalcular(){
       row.insertCell().innerText = 'Nenhum item/serviço cobrado.';
       row.insertCell().innerText = '';
   }
-  
-  // 3. ATUALIZA OBSERVAÇÕES PARA IMPRESSÃO
+
   const obsText = document.getElementById('observacoes').value.trim();
   document.getElementById('obsContent').innerText = obsText;
   document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
@@ -243,42 +234,26 @@ function recalcular(){
 function percentCustomChanged(input){
   const customValue = input.value.trim();
   const select = document.getElementById('percent');
-  
-  if(customValue !== "") {
-    // Se digitou algo no customizado, deseleciona o select
-    select.value = ""; 
-  } else {
-    // Se apagou o customizado, volta para o valor padrão (50%)
-    if (select.value === "") {
-        select.value = "50";
-    }
-  }
+  if(customValue !== "") select.value = ""; 
+  else if (select.value === "") select.value = "50";
   recalcular();
 }
 
-// NOVO: Função para o select (se mudar o select, zera o customizado)
 function percentSelected(select){
     document.getElementById('percentCustom').value = "";
     recalcular();
 }
 
-
 function attachListeners(){
-  // Recalcula quando um valor é alterado
   document.querySelectorAll('input.valor').forEach(el=>el.addEventListener('input', recalcular));
-  // Recalcula quando a descrição de "Outros" é alterada
   document.getElementById('outrosDesc').addEventListener('input', recalcular);
-  // Garante que o campo de observações apareça corretamente no PDF
   document.getElementById('observacoes').addEventListener('input', recalcular);
-  
-  // Campos que não afetam o cálculo, mas precisam de listener para evitar erros (mantidos)
   document.getElementById('cliente').addEventListener('input', ()=>{});
   document.getElementById('descricaoAparelho').addEventListener('input', ()=>{});
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{ attachListeners(); recalcular(); });
 
-// Permite Ctrl+S para imprimir
 window.addEventListener('keydown', function(e){
   if((e.ctrlKey||e.metaKey) && e.key === 's'){
     e.preventDefault();
