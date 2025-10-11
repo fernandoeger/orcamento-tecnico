@@ -68,7 +68,7 @@
       <tbody>
         <tr><td>Limpeza</td><td><input class="valor servico" data-item="Limpeza" type="number" min="0" step="0.01" value="0" /></td></tr>
         
-        <tr><td>Mão de Obra</td><td><input class="valor servico" data-item="Mão de Obra" type="number" min="0" step="0.01" value="120" /></td></tr>
+                <tr><td>Mão de Obra</td><td><input class="valor servico" data-item="Mão de Obra" type="number" min="0" step="0.01" value="120" /></td></tr>
         
         <tr><td>Formatação</td><td><input class="valor servico" data-item="Formatação" type="number" min="0" step="0.01" value="0" /></td></tr>
         <tr><td>Instalação de Windows</td><td><input class="valor servico" data-item="Instalação de Windows" type="number" min="0" step="0.01" value="0" /></td></tr>
@@ -142,7 +142,7 @@
     <table>
       <tbody>
         <tr><td> Custo total (Serviços + Peças) </td><td class="right" id="custo">R$ 0,00</td></tr>
-        <tr><td> Porcentagem de Lucro (%) </td><td class="right" id="porcent">0%</td></tr>
+        <tr><td> Porcentagem de Lucro (%) </td><td class="right" id="porcent">50%</td></tr>
         <tr><td> **TOTAL (R$)** </td><td class="right" id="venda"><strong>R$ 0,00</strong></td></tr>
         <tr class="ocultar-print"><td> Lucro (R$) </td><td class="right" id="lucro">R$ 0,00</td></tr>
       </tbody>
@@ -169,21 +169,9 @@ function formatBR(value){
   return numericValue.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
-/**
- * Soma os valores de todos os inputs que correspondem ao seletor CSS fornecido.
- * @param {string} selector - O seletor CSS para encontrar os elementos de input.
- * @param {boolean} excludeMaoDeObra - Se deve excluir o item 'Mão de Obra' da soma.
- * @returns {number} - A soma total dos valores.
- */
-function sumValues(selector, excludeMaoDeObra = false){
+function sumValues(selector){
   const nodes = document.querySelectorAll(selector);
-  return Array.from(nodes).map(i=>{
-    const item = i.getAttribute('data-item');
-    if (excludeMaoDeObra && item === 'Mão de Obra') {
-      return 0;
-    }
-    return parseFloat(i.value || 0);
-  }).reduce((a,b)=>a+b,0);
+  return Array.from(nodes).map(i=>parseFloat(i.value||0)).reduce((a,b)=>a+b,0);
 }
 
 function getSelectedPercent(){
@@ -193,7 +181,6 @@ function getSelectedPercent(){
   return parseFloat(sel.value)||0;
 }
 
-// Esta função coleta o valor BASE/CUSTO de todos os itens com valor > 0.
 function getItensCobrados(){
     const itens = [];
     const selectors = ['input.servico', 'input.peca'];
@@ -206,55 +193,34 @@ function getItensCobrados(){
                 if (item === 'Outros' && document.getElementById('outrosDesc').value.trim() !== "") {
                     nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
                 }
-                // O valor guardado aqui é o CUSTO/BASE do item.
-                itens.push({ nome: nome, valor: valor, isServico: input.classList.contains('servico') }); 
+                itens.push({ nome: nome, valor: valor });
             }
         });
     });
     return itens;
 }
 
-
 function recalcular(){
-  // 1. Definições de Cálculo
-  const pctServico = 25; // Lucro fixo de 25% para os serviços (exceto Mão de Obra)
-
-  // 2. Cálculo dos custos base
-  const totalServicosComLucro = sumValues('input.servico', true); 
-  const valorMaoDeObra = parseFloat(document.querySelector('input[data-item="Mão de Obra"]').value || 0);
+  // Lógica de cálculo antiga: soma todos os custos e aplica a porcentagem selecionada
+  const totalServicos = sumValues('input.servico');
   const totalPecas = sumValues('input.peca');
+  const custo = totalServicos + totalPecas;
+  const pct = getSelectedPercent();
   
-  // Custo Total é a soma de todos os itens pelo seu valor base (Custo)
-  const custo = totalServicosComLucro + valorMaoDeObra + totalPecas;
-
-  // 3. Aplicação do Lucro
-  const lucroDosServicos = totalServicosComLucro * (pctServico / 100);
-
-  // Venda dos Serviços com Lucro
-  const vendaServicosComLucro = totalServicosComLucro * (1 + pctServico/100);
-
-  // 4. Cálculo do Total Final (Venda)
-  // Venda Final = (Serviços + Lucro) + Mão de Obra (Custo) + Peças (Custo)
-  const venda = vendaServicosComLucro + valorMaoDeObra + totalPecas;
-  
-  // Lucro Total: Venda - Custo
+  // A venda é calculada sobre o CUSTO total + o percentual de lucro selecionado
+  const venda = custo * (1 + pct/100);
   const lucro = venda - custo;
-
-  // 5. Atualização do Resumo Final
+  
+  // Atualiza o Resumo Final
   document.getElementById('custo').innerText = 'R$ ' + formatBR(custo);
-  
-  // A porcentagem mostrada é o percentual de lucro total em relação ao custo.
-  const porcentagemLucroReal = custo > 0 ? (lucro / custo) * 100 : 0;
-  document.getElementById('porcent').innerText = formatBR(porcentagemLucroReal) + '%'; 
-
+  document.getElementById('porcent').innerText = pct + '%'; // Exibe o % selecionado
   document.getElementById('venda').innerText = 'R$ ' + formatBR(venda);
   document.getElementById('lucro').innerText = 'R$ ' + formatBR(lucro);
 
-
-  // 6. ATUALIZAÇÃO DA TABELA DE ITENS COBRADOS
+  // Atualiza a Tabela de Itens Orçados (Cobrança) com os valores de CUSTO
   const tabelaCorpo = document.querySelector('#cobrancaTable tbody');
   tabelaCorpo.innerHTML = '';
-  const itens = getItensCobrados(); // Obtém os itens base (custo)
+  const itens = getItensCobrados();
   
   if (itens.length > 0) {
       itens.forEach(item => {
@@ -262,24 +228,43 @@ function recalcular(){
           row.insertCell().innerText = item.nome;
           const valorCell = row.insertCell();
           valorCell.className = 'right';
-          
-          let valorNaTabela = item.valor;
-          
-          // Se for um serviço que recebe lucro (não é Mão de Obra), adiciona 25% ao valor exibido
-          if (item.isServico && item.nome !== 'Mão de Obra') {
-              valorNaTabela = item.valor * (1 + pctServico / 100);
-          }
-          
-          valorCell.innerText = 'R$ ' + formatBR(valorNaTabela);
+          // Aqui o valor mostrado é o CUSTO base do item. O lucro é somado no total.
+          valorCell.innerText = 'R$ ' + formatBR(item.valor); 
       });
+      // Adiciona uma linha para mostrar o lucro (se for diferente de zero)
+      if (lucro > 0.01) { 
+          const rowLucro = tabelaCorpo.insertRow();
+          rowLucro.insertCell().innerText = 'Margem de Lucro (' + pct + '%)';
+          const valorLucroCell = rowLucro.insertCell();
+          valorLucroCell.className = 'right';
+          valorLucroCell.innerText = 'R$ ' + formatBR(lucro);
+      }
+      // Adiciona uma linha de total na tabela de cobrança para fechar o ciclo
+      const rowTotal = tabelaCorpo.insertRow();
+      rowTotal.style.fontWeight = 'bold';
+      rowTotal.style.borderTop = '2px solid #333';
+      rowTotal.insertCell().innerText = 'TOTAL FINAL';
+      const valorTotalCell = rowTotal.insertCell();
+      valorTotalCell.className = 'right';
+      valorTotalCell.innerText = 'R$ ' + formatBR(venda);
+
   } else {
       const row = tabelaCorpo.insertRow();
       row.insertCell().innerText = 'Nenhum item/serviço cobrado.';
       row.insertCell().colSpan = 2;
       row.cells[0].style.textAlign = 'center';
   }
+  
+  // Oculta a linha de lucro na impressão (mantendo a regra original de impressão)
+  if (window.matchMedia('print').matches) {
+      document.querySelectorAll('.tabela-cobranca tbody tr').forEach(row => {
+          if (row.cells[0].innerText.includes('Margem de Lucro')) {
+              row.style.display = 'none';
+          }
+      });
+  }
 
-  // 7. Atualização das Observações para Impressão
+
   const obsText = document.getElementById('observacoes').value.trim();
   document.getElementById('obsContent').innerText = obsText;
   document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
