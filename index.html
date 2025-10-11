@@ -5,313 +5,357 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Orçamento</title>
 <style>
-  /* Estilos Gerais */
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:980px;margin:18px auto;padding:12px}
-  h1{margin-bottom:6px}
-  label{display:block;margin-top:10px;font-weight:600}
-  input[type="text"], input[type="number"], select, textarea{width:100%;padding:8px;margin-top:6px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box}
-  .row{display:flex;gap:8px}
-  .row > *{flex:1}
-  .section{margin-top:14px;padding:12px;border:1px solid #eee;border-radius:8px;background:#fafafa}
-  table{width:100%;border-collapse:collapse;margin-top:8px}
-  th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}
-  .right{text-align:right}
-  .btn{display:inline-block;padding:8px 12px;margin-top:10px;border-radius:6px;border:0;background:#0b76ef;color:white;cursor:pointer}
-  .btn.secondary{background:#6c757d}
-  .small{font-size:0.9rem;color:#555}
-  footer{margin-top:18px;font-size:0.85rem;color:#444;border-top:1px dashed #ddd;padding-top:12px}
-  .two-cols{display:flex;gap:12px}
-  .two-cols > div{flex:1}
-  .item-desc{width:60%}
-  .item-val{width:40%}
-  /* REMOVEMOS A ESTRUTURA DA TABELA DE COBRANÇA para ficar como no layout da foto */
-  .tabela-cobranca{margin-top:20px; border-top: 1px solid #ddd; padding-top: 10px;}
-  .tabela-cobranca h3{margin-bottom: 0;}
-  .tabela-cobranca table{border: 1px solid #ccc; border-radius: 4px; margin-bottom: 20px;}
-  .tabela-cobranca th{background-color: #eee;}
-  
-  @media(max-width:700px){ .two-cols{flex-direction:column} .item-desc{width:100%} .item-val{width:100%} }
+  /* Estilos Gerais */
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:980px;margin:18px auto;padding:12px}
+  h1{margin-bottom:6px}
+  label{display:block;margin-top:10px;font-weight:600}
+  input[type="text"], input[type="number"], select, textarea{width:100%;padding:8px;margin-top:6px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box}
+  .row{display:flex;gap:8px}
+  .row > *{flex:1}
+  .section{margin-top:14px;padding:12px;border:1px solid #eee;border-radius:8px;background:#fafafa}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}
+  .right{text-align:right}
+  .btn{display:inline-block;padding:8px 12px;margin-top:10px;border-radius:6px;border:0;background:#0b76ef;color:white;cursor:pointer}
+  .btn.secondary{background:#6c757d}
+  .small{font-size:0.9rem;color:#555}
+  footer{margin-top:18px;font-size:0.85rem;color:#444;border-top:1px dashed #ddd;padding-top:12px}
+  .two-cols{display:flex;gap:12px}
+  .two-cols > div{flex:1}
+  .item-desc{width:60%}
+  .item-val{width:40%}
+  /* Estrutura da Tabela de Cobrança (para o PDF) */
+  .tabela-cobranca{margin-top:20px; border-top: 1px solid #ddd; padding-top: 10px;}
+  .tabela-cobranca h3{margin-bottom: 0;}
+  .tabela-cobranca table{border: 1px solid #ccc; border-radius: 4px; margin-bottom: 20px;}
+  .tabela-cobranca th{background-color: #eee;}
+  
+  @media(max-width:700px){ .two-cols{flex-direction:column} .item-desc{width:100%} .item-val{width:100%} }
 
-  /* Estilos de Impressão (Gerar PDF) */
-  @media print {
-    body { margin: 0; padding: 0; max-width: none; font-size: 10pt; }
-    /* Oculta as seções de edição e botões */
-    .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
+  /* Estilos de Impressão (Gerar PDF) */
+  @media print {
+    body { margin: 0; padding: 0; max-width: none; font-size: 10pt; }
+    /* Oculta as seções de edição e botões */
+    .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
 
-    /* 🔒 Oculta a porcentagem de lucro e custo total no PDF para simplificar */
-    tr:has(#porcent), tr:has(#custo), tr:has(#lucro) { display: none !important; }
+    /* 🔒 Oculta a porcentagem de lucro, custo total e lucro final no PDF */
+    tr:has(#porcent), tr:has(#custo), tr:has(#lucro) { display: none !important; }
 
-    /* Garante que o orçamento final seja exibido, adaptando para o layout sem a tabela de cobrança explícita */
-    .resumo-final { 
-      border: none; 
-      padding: 0; 
-      background: none; 
-      margin-top: 20px; 
-    }
-    .resumo-final table { border: 1px solid #333; }
-    .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
+    /* Garante que o orçamento final e a tabela de cobrança sejam exibidos */
+    .resumo-final { 
+      border: none; 
+      padding: 0; 
+      background: none; 
+      margin-top: 20px; 
+    }
+    .resumo-final table { border: 1px solid #333; }
+    .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
 
-    /* Mostra apenas a tabela de ITENS ORÇADOS na impressão, mas com um novo nome */
-    .tabela-cobranca {
-        display: block !important;
-        border: none !important;
-        padding: 0 !important;
-        margin-top: 15px !important;
-    }
-    .tabela-cobranca h3 {
-        display: block !important;
-        font-size: 1.1em;
-        margin-bottom: 5px;
-        font-weight: bold;
-    }
-    #cobrancaTable {
-        border-collapse: collapse;
-    }
-    /* Oculta a linha de lucro e a linha de total na tabela de cobrança na impressão */
-    .tabela-cobranca tbody tr:last-child, /* Total Final */
-    .tabela-cobranca tbody tr:nth-last-child(2) /* Margem de Lucro */
-    {
-      display: none !important; 
-    }
-    
-  }
+    /* Mostra a tabela de ITENS ORÇADOS na impressão (cliente) */
+    .tabela-cobranca {
+        display: block !important;
+        border: none !important;
+        padding: 0 !important;
+        margin-top: 15px !important;
+    }
+    .tabela-cobranca h3 {
+        display: block !important;
+        font-size: 1.1em;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+    #cobrancaTable {
+        border-collapse: collapse;
+    }
+    /* Oculta a linha de lucro e a linha de total na tabela de cobrança na impressão */
+    .tabela-cobranca tbody tr:last-child, /* Total Final */
+    .tabela-cobranca tbody tr:nth-last-child(2) /* Margem de Lucro */
+    {
+      display: none !important; 
+    }
+  }
 </style>
 </head>
 <body>
-  <h1>Orçamento</h1>
+  <h1>Orçamento</h1>
 
-  <label>Cliente</label>
-  <input id="cliente" type="text" placeholder="Nome do cliente (opcional)" />
+  <label>Cliente</label>
+  <input id="cliente" type="text" placeholder="Nome do cliente (opcional)" />
 
-  <label>Descrição do aparelho</label>
-  <input id="descricaoAparelho" type="text" placeholder="Ex: Notebook Acer E5-511 / Desktop HP" />
+  <label>Descrição do aparelho</label>
+  <input id="descricaoAparelho" type="text" placeholder="Ex: Notebook Acer E5-511 / Desktop HP" />
 
-  <div class="section">
-    <h3>Serviços (valores editáveis)</h3>
-    <table id="servicosTable">
-      <thead><tr><th>Serviço</th><th>Valor (R$)</th></tr></thead>
-      <tbody>
-        <tr><td>Limpeza</td><td><input class="valor servico" data-item="Limpeza" type="number" min="0" step="0.01" value="0" /></td></tr>
-        
-        <tr><td>Mão de Obra</td><td><input class="valor servico" data-item="Mão de Obra" type="number" min="0" step="0.01" value="120" /></td></tr>
-        
-        <tr><td>Formatação</td><td><input class="valor servico" data-item="Formatação" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Instalação de Windows</td><td><input class="valor servico" data-item="Instalação de Windows" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Backup de dados</td><td><input class="valor servico" data-item="Backup de dados" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Troca de pasta térmica</td><td><input class="valor servico" data-item="Troca de pasta térmica" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Reballing</td><td><input class="valor servico" data-item="Reballing" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Atualização de BIOS</td><td><input class="valor servico" data-item="Atualização de BIOS" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Diagnóstico</td><td><input class="valor servico" data-item="Diagnóstico" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Instalação de drivers</td><td><input class="valor servico" data-item="Instalação de drivers" type="number" min="0" step="0.01" value="0" /></td></tr>
-      </tbody>
-    </table>
-  </div>
+  <div class="section">
+    <h3>Serviços (valores editáveis)</h3>
+    <table id="servicosTable">
+      <thead><tr><th>Serviço</th><th>Valor (R$)</th></tr></thead>
+      <tbody>
+        <tr><td>Limpeza</td><td><input class="valor servico" data-item="Limpeza" type="number" min="0" step="0.01" value="0" /></td></tr>
+        
+        <tr><td>Mão de Obra</td><td><input class="valor servico" data-item="Mão de Obra" type="number" min="0" step="0.01" value="120" /></td></tr>
+        
+        <tr><td>Formatação</td><td><input class="valor servico" data-item="Formatação" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Instalação de Windows</td><td><input class="valor servico" data-item="Instalação de Windows" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Backup de dados</td><td><input class="valor servico" data-item="Backup de dados" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Troca de pasta térmica</td><td><input class="valor servico" data-item="Troca de pasta térmica" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Reballing</td><td><input class="valor servico" data-item="Reballing" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Atualização de BIOS</td><td><input class="valor servico" data-item="Atualização de BIOS" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Diagnóstico</td><td><input class="valor servico" data-item="Diagnóstico" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Instalação de drivers</td><td><input class="valor servico" data-item="Instalação de drivers" type="number" min="0" step="0.01" value="0" /></td></tr>
+      </tbody>
+    </table>
+  </div>
 
-  <div class="section">
-    <h3>Peças (valores editáveis)</h3>
-    <table id="pecasTable">
-      <thead><tr><th>Peça</th><th>Valor (R$)</th></tr></thead>
-      <tbody>
-        <tr><td>SSD</td><td><input class="valor peca" data-item="SSD" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>HD</td><td><input class="valor peca" data-item="HD" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>RAM</td><td><input class="valor peca" data-item="RAM" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Teclado</td><td><input class="valor peca" data-item="Teclado" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Tela / Display</td><td><input class="valor peca" data-item="Tela" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Bateria</td><td><input class="valor peca" data-item="Bateria" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Cooler / Ventoinha</td><td><input class="valor peca" data-item="Cooler" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>DC Jack</td><td><input class="valor peca" data-item="DC Jack" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Fonte (PSU)</td><td><input class="valor peca" data-item="Fonte" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Placa-mãe</td><td><input class="valor peca" data-item="Placa-mãe" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Carcaça / Gabinete</td><td><input class="valor peca" data-item="Carcaça" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Flat / Cabo Flat</td><td><input class="valor peca" data-item="Flat" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Placa de vídeo (GPU)</td><td><input class="valor peca" data-item="GPU" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Outros (descrição abaixo)</td><td><input class="valor peca" data-item="Outros" type="number" min="0" step="0.01" value="0" /></td></tr>
-      </tbody>
-    </table>
-    <label>Descrição para "Outros"</label>
-    <input id="outrosDesc" type="text" placeholder="Descreva peça/serviço se usar o campo 'Outros'"/>
-  </div>
-  
-  <div class="section resumo-final" style="margin-top:14px;">
-    
-    <div class="tabela-cobranca ocultar-print">
-        <h3>Itens Orçados</h3>
-        <table id="cobrancaTable">
-            <thead>
-                <tr><th>Item</th><th class="right">Valor (R$)</th></tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
-    
-    <label class="ocultar-print">Porcentagem de lucro (%)</label>
-    <div class="row ocultar-print">
-      <select id="percent" onchange="percentSelected(this)">
-        <option value="30">30%</option>
-        <option value="40">40%</option>
-        <option value="50" selected>50%</option>
-        <option value="60">60%</option>
-        <option value="70">70%</option>
-        <option value="0">0%</option>
-      </select>
-      <input id="percentCustom" type="number" min="0" max="500" step="1" placeholder="Outro (%)" oninput="percentCustomChanged(this)" />
-    </div>
+  <div class="section">
+    <h3>Peças (valores editáveis)</h3>
+    <table id="pecasTable">
+      <thead><tr><th>Peça</th><th>Valor (R$)</th></tr></thead>
+      <tbody>
+        <tr><td>SSD</td><td><input class="valor peca" data-item="SSD" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>HD</td><td><input class="valor peca" data-item="HD" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>RAM</td><td><input class="valor peca" data-item="RAM" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Teclado</td><td><input class="valor peca" data-item="Teclado" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Tela / Display</td><td><input class="valor peca" data-item="Tela" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Bateria</td><td><input class="valor peca" data-item="Bateria" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Cooler / Ventoinha</td><td><input class="valor peca" data-item="Cooler" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>DC Jack</td><td><input class="valor peca" data-item="DC Jack" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Fonte (PSU)</td><td><input class="valor peca" data-item="Fonte" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Placa-mãe</td><td><input class="valor peca" data-item="Placa-mãe" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Carcaça / Gabinete</td><td><input class="valor peca" data-item="Carcaça" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Flat / Cabo Flat</td><td><input class="valor peca" data-item="Flat" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Placa de vídeo (GPU)</td><td><input class="valor peca" data-item="GPU" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Outros (descrição abaixo)</td><td><input class="valor peca" data-item="Outros" type="number" min="0" step="0.01" value="0" /></td></tr>
+      </tbody>
+    </table>
+    <label>Descrição para "Outros"</label>
+    <input id="outrosDesc" type="text" placeholder="Descreva peça/serviço se usar o campo 'Outros'"/>
+  </div>
+  
+  <div class="section resumo-final" style="margin-top:14px;">
+    
+        <div class="tabela-cobranca ocultar-print">
+        <h3>Itens Orçados</h3>
+        <table id="cobrancaTable">
+            <thead>
+                <tr><th>Item</th><th class="right">Valor (R$)</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    
+    <label class="ocultar-print">Porcentagem de lucro (%)</label>
+    <div class="row ocultar-print">
+      <select id="percent" onchange="percentSelected(this)">
+                <option value="30">30%</option>
+        <option value="40">40%</option>
+        <option value="50">50%</option>
+        <option value="60">60%</option>
+        <option value="70">70%</option>
+        <option value="0" selected>0%</option> 
+      </select>
+      <input id="percentCustom" type="number" min="0" max="500" step="1" placeholder="Outro (%)" oninput="percentCustomChanged(this)" />
+    </div>
 
-    <label>Resumo</label>
-    <table>
-      <tbody>
-        <tr><td> Custo total (Serviços + Peças) </td><td class="right" id="custo">R$ 0,00</td></tr>
-        <tr><td> Porcentagem (%) </td><td class="right" id="porcent">50%</td></tr>
-        <tr><td> **Valor venda (R$)** </td><td class="right" id="venda"><strong>R$ 0,00</strong></td></tr>
-        <tr class="ocultar-print"><td> Lucro (R$) </td><td class="right" id="lucro">R$ 0,00</td></tr>
-      </tbody>
-    </table>
-    
-    <div style="margin-top:12px">
-      <button class="btn" onclick="recalcular()">Calcular</button>
-      <button class="btn secondary" onclick="window.print()">Gerar PDF / Imprimir</button>
-    </div>
+    <label>Resumo</label>
+    <table>
+      <tbody>
+        <tr><td> Custo total (Serviços + Peças) </td><td class="right" id="custo">R$ 0,00</td></tr>
+        <tr><td> Porcentagem (%) </td><td class="right" id="porcent">0%</td></tr>
+        <tr><td> **Valor venda (R$)** </td><td class="right" id="venda"><strong>R$ 0,00</strong></td></tr>
+        <tr class="ocultar-print"><td> Lucro (R$) </td><td class="right" id="lucro">R$ 0,00</td></tr>
+      </tbody>
+    </table>
+    
+    <div style="margin-top:12px">
+      <button class="btn" onclick="recalcular()">Calcular</button>
+      <button class="btn secondary" onclick="window.print()">Gerar PDF / Imprimir</button>
+    </div>
 
-    <footer class="ocultar-print">
-      Dica: preencha o campo "Cliente" e "Descrição do aparelho" antes de gerar o PDF. Use "Salvar como PDF" no diálogo de impressão.
-    </footer>
-  </div>
-  
-  <div class="section ocultar-print">
-      <label>Observações / Condições de Serviço (não aparece no resumo final)</label>
-      <textarea id="observacoes" rows="3" placeholder="Ex: Garantia de 90 dias para serviço; Prazo de 3 dias úteis."></textarea>
-  </div>
-  
-  <div id="observacoesPrint" style="margin-top: 15px; font-size: 0.95rem;">
-      <p style="font-weight: bold;">Observações:</p>
-      <p id="obsContent" style="white-space: pre-wrap; margin-top: 5px;"></p>
-  </div>
+    <footer class="ocultar-print">
+      Dica: preencha o campo "Cliente" e "Descrição do aparelho" antes de gerar o PDF. Use "Salvar como PDF" no diálogo de impressão.
+    </footer>
+  </div>
+  
+  <div class="section ocultar-print">
+      <label>Observações / Condições de Serviço (não aparece no resumo final)</label>
+      <textarea id="observacoes" rows="3" placeholder="Ex: Garantia de 90 dias para serviço; Prazo de 3 dias úteis."></textarea>
+  </div>
+  
+  <div id="observacoesPrint" style="margin-top: 15px; font-size: 0.95rem;">
+      <p style="font-weight: bold;">Observações:</p>
+      <p id="obsContent" style="white-space: pre-wrap; margin-top: 5px;"></p>
+  </div>
 
 <script>
+const PCT_LUCRO_PECAS = 25; // Lucro fixo de 25% nas peças
+
 function formatBR(value){
-  const numericValue = parseFloat(value) || 0;
-  return numericValue.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const numericValue = parseFloat(value) || 0;
+  return numericValue.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
+/**
+ * Soma os valores de todos os inputs que correspondem ao seletor CSS fornecido.
+ * @param {string} selector - O seletor CSS para encontrar os elementos de input.
+ * @returns {number} - A soma total dos valores de CUSTO.
+ */
 function sumValues(selector){
-  const nodes = document.querySelectorAll(selector);
-  return Array.from(nodes).map(i=>parseFloat(i.value||0)).reduce((a,b)=>a+b,0);
+  const nodes = document.querySelectorAll(selector);
+  return Array.from(nodes).map(i=>parseFloat(i.value||0)).reduce((a,b)=>a+b,0);
 }
 
 function getSelectedPercent(){
-  const sel = document.getElementById('percent');
-  const custom = document.getElementById('percentCustom').value;
-  if(custom !== "") return parseFloat(custom)||0;
-  return parseFloat(sel.value)||0;
+  const sel = document.getElementById('percent');
+  const custom = document.getElementById('percentCustom').value;
+  if(custom !== "") return parseFloat(custom)||0;
+  return parseFloat(sel.value)||0;
 }
 
+// Esta função coleta o valor BASE/CUSTO de todos os itens com valor > 0.
 function getItensCobrados(){
-    const itens = [];
-    const selectors = ['input.servico', 'input.peca'];
-    selectors.forEach(selector => {
-        document.querySelectorAll(selector).forEach(input => {
-            const valor = parseFloat(input.value || 0);
-            if (valor > 0) {
-                const item = input.getAttribute('data-item');
-                let nome = item;
-                if (item === 'Outros' && document.getElementById('outrosDesc').value.trim() !== "") {
-                    nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
-                }
-                itens.push({ nome: nome, valor: valor });
-            }
-        });
-    });
-    return itens;
+    const itens = [];
+    const selectors = ['input.servico', 'input.peca'];
+    selectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(input => {
+            const valor = parseFloat(input.value || 0);
+            if (valor > 0) {
+                const item = input.getAttribute('data-item');
+                let nome = item;
+                if (item === 'Outros' && document.getElementById('outrosDesc').value.trim() !== "") {
+                    nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
+                }
+
+                // O valor guardado aqui é o CUSTO/BASE do item.
+                itens.push({ nome: nome, valor: valor, isPeca: input.classList.contains('peca') }); 
+            }
+        });
+    });
+    return itens;
 }
+
 
 function recalcular(){
-  // Lógica de cálculo: soma todos os custos e aplica a porcentagem selecionada
-  const totalServicos = sumValues('input.servico');
-  const totalPecas = sumValues('input.peca');
-  const custo = totalServicos + totalPecas;
-  const pct = getSelectedPercent();
-  
-  // A venda é calculada sobre o CUSTO total + o percentual de lucro selecionado
-  const venda = custo * (1 + pct/100);
-  const lucro = venda - custo;
-  
-  // 1. Atualiza o Resumo Final (Visível)
-  document.getElementById('custo').innerText = 'R$ ' + formatBR(custo);
-  document.getElementById('porcent').innerText = pct + '%'; 
-  document.getElementById('venda').innerText = 'R$ ' + formatBR(venda);
-  document.getElementById('lucro').innerText = 'R$ ' + formatBR(lucro);
+  const pctGeral = getSelectedPercent();
 
-  // 2. Preenche a Tabela de Cobrança (Oculta, usada só na impressão)
-  const tabelaCorpo = document.querySelector('#cobrancaTable tbody');
-  tabelaCorpo.innerHTML = '';
-  const itens = getItensCobrados();
-  
-  if (itens.length > 0) {
-      itens.forEach(item => {
-          const row = tabelaCorpo.insertRow();
-          row.insertCell().innerText = item.nome;
-          const valorCell = row.insertCell();
-          valorCell.className = 'right';
-          valorCell.innerText = 'R$ ' + formatBR(item.valor); 
-      });
-      // Adiciona a linha de lucro (oculta na impressão)
-      if (lucro > 0.01) { 
-          const rowLucro = tabelaCorpo.insertRow();
-          rowLucro.insertCell().innerText = 'Margem de Lucro (' + pct + '%)';
-          const valorLucroCell = rowLucro.insertCell();
-          valorLucroCell.className = 'right';
-          valorLucroCell.innerText = 'R$ ' + formatBR(lucro);
-      }
-      // Adiciona a linha de total (oculta na impressão)
-      const rowTotal = tabelaCorpo.insertRow();
-      rowTotal.style.fontWeight = 'bold';
-      rowTotal.style.borderTop = '2px solid #333';
-      rowTotal.insertCell().innerText = 'TOTAL FINAL';
-      const valorTotalCell = rowTotal.insertCell();
-      valorTotalCell.className = 'right';
-      valorTotalCell.innerText = 'R$ ' + formatBR(venda);
+  // 1. Cálculo dos custos base
+  const custoServicos = sumValues('input.servico'); 
+  const custoPecas = sumValues('input.peca');
+  const custoTotal = custoServicos + custoPecas;
 
-  } else {
-      const row = tabelaCorpo.insertRow();
-      row.insertCell().innerText = 'Nenhum item/serviço cobrado.';
-      row.insertCell().colSpan = 2;
-      row.cells[0].style.textAlign = 'center';
-  }
-  
-  // 3. Atualiza as Observações para Impressão
-  const obsText = document.getElementById('observacoes').value.trim();
-  document.getElementById('obsContent').innerText = obsText;
-  document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
+  // 2. Cálculo do Lucro por Categoria
+  // Lucro Fixo nas peças (25%)
+  const lucroPecas = custoPecas * (PCT_LUCRO_PECAS / 100);
+  
+  // Lucro Geral nos Serviços (Mão de Obra incluída)
+  const lucroServicos = custoServicos * (pctGeral / 100);
+
+  // Lucro total (a soma dos lucros)
+  const lucroTotal = lucroPecas + lucroServicos;
+  
+  // 3. Cálculo do Valor Final (Venda)
+  const venda = custoTotal + lucroTotal;
+  
+  // 4. Atualização do Resumo Final (Visível)
+  document.getElementById('custo').innerText = 'R$ ' + formatBR(custoTotal);
+  // A porcentagem mostrada é o percentual de lucro total em relação ao custo total.
+  const porcentagemLucroReal = custoTotal > 0 ? (lucroTotal / custoTotal) * 100 : 0;
+  document.getElementById('porcent').innerText = formatBR(porcentagemLucroReal) + '%'; 
+  
+  document.getElementById('venda').innerText = 'R$ ' + formatBR(venda);
+  document.getElementById('lucro').innerText = 'R$ ' + formatBR(lucroTotal);
+
+  // 5. Preenche a Tabela de Cobrança (Oculta, usada só na impressão)
+  const tabelaCorpo = document.querySelector('#cobrancaTable tbody');
+  tabelaCorpo.innerHTML = '';
+  const itens = getItensCobrados(); // Obtém os itens base (custo)
+  
+  let valorTotalItensCobrados = 0;
+
+  if (itens.length > 0) {
+      itens.forEach(item => {
+          const row = tabelaCorpo.insertRow();
+          row.insertCell().innerText = item.nome;
+          const valorCell = row.insertCell();
+          valorCell.className = 'right';
+          
+          let valorNaTabela = item.valor;
+          
+          // Se for uma peça, aplica o lucro de 25% no valor mostrado ao cliente
+          if (item.isPeca) {
+              valorNaTabela = item.valor * (1 + PCT_LUCRO_PECAS / 100);
+          } else {
+              // Se for um serviço, mostra o CUSTO base
+              valorNaTabela = item.valor;
+          }
+          
+          valorTotalItensCobrados += valorNaTabela;
+          valorCell.innerText = 'R$ ' + formatBR(valorNaTabela);
+      });
+
+      // Lucro Geral (somente a parte dos serviços)
+      const lucroGeralRestante = custoServicos * (pctGeral / 100);
+
+      // Adiciona a linha para mostrar o Lucro Geral restante (Serviços)
+      if (lucroGeralRestante > 0.01) { 
+          const rowLucro = tabelaCorpo.insertRow();
+          // O item de lucro agora é a margem geral de serviço, menos o que já foi embutido
+          rowLucro.insertCell().innerText = 'Margem de Lucro Serviços (' + pctGeral + '%)';
+          const valorLucroCell = rowLucro.insertCell();
+          valorLucroCell.className = 'right';
+          valorLucroCell.innerText = 'R$ ' + formatBR(lucroGeralRestante);
+          valorTotalItensCobrados += lucroGeralRestante;
+      }
+
+      // Adiciona uma linha de total na tabela de cobrança para fechar o ciclo
+      const rowTotal = tabelaCorpo.insertRow();
+      rowTotal.style.fontWeight = 'bold';
+      rowTotal.style.borderTop = '2px solid #333';
+      rowTotal.insertCell().innerText = 'TOTAL FINAL';
+      const valorTotalCell = rowTotal.insertCell();
+      valorTotalCell.className = 'right';
+      valorTotalCell.innerText = 'R$ ' + formatBR(venda); // Usa o valor de venda final calculado
+      
+  } else {
+      const row = tabelaCorpo.insertRow();
+      row.insertCell().innerText = 'Nenhum item/serviço cobrado.';
+      row.insertCell().colSpan = 2;
+      row.cells[0].style.textAlign = 'center';
+  }
+  
+  // 6. Atualiza as Observações para Impressão
+  const obsText = document.getElementById('observacoes').value.trim();
+  document.getElementById('obsContent').innerText = obsText;
+  document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
 }
 
 function percentCustomChanged(input){
-  const customValue = input.value.trim();
-  const select = document.getElementById('percent');
-  if(customValue !== "") select.value = ""; 
-  else if (select.value === "") select.value = "50";
-  recalcular();
+  const customValue = input.value.trim();
+  const select = document.getElementById('percent');
+  if(customValue !== "") select.value = ""; 
+  else if (select.value === "") select.value = "0"; // Alterado para 0% como fallback
+  recalcular();
 }
 
 function percentSelected(select){
-    document.getElementById('percentCustom').value = "";
-    recalcular();
+    document.getElementById('percentCustom').value = "";
+    recalcular();
 }
 
 function attachListeners(){
-  document.querySelectorAll('input.valor').forEach(el=>el.addEventListener('input', recalcular));
-  document.getElementById('outrosDesc').addEventListener('input', recalcular);
-  document.getElementById('observacoes').addEventListener('input', recalcular);
-  document.getElementById('cliente').addEventListener('input', ()=>{});
-  document.getElementById('descricaoAparelho').addEventListener('input', ()=>{});
+  document.querySelectorAll('input.valor').forEach(el=>el.addEventListener('input', recalcular));
+  document.getElementById('outrosDesc').addEventListener('input', recalcular);
+  document.getElementById('observacoes').addEventListener('input', recalcular);
+  document.getElementById('cliente').addEventListener('input', ()=>{});
+  document.getElementById('descricaoAparelho').addEventListener('input', ()=>{});
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{ attachListeners(); recalcular(); });
 
 window.addEventListener('keydown', function(e){
-  if((e.ctrlKey||e.metaKey) && e.key === 's'){
-    e.preventDefault();
-    window.print();
-  }
+  if((e.ctrlKey||e.metaKey) && e.key === 's'){
+    e.preventDefault();
+    window.print();
+  }
 });
 </script>
 </body>
