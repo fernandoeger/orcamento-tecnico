@@ -31,18 +31,38 @@
   #maoObraValue input { margin: 0;}
   @media(max-width:700px){ .two-cols{flex-direction:column} }
 
-  /* Estilos de Impressão (Gerar PDF) - ALTERADO AQUI */
+  /* ESTILOS DE IMPRESSÃO - REVISADO */
   @media print {
     body { margin: 0; padding: 0; max-width: none; font-size: 10pt; }
-    
-    /* Esconde todas as seções de edição e botões */
-    .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
     
-    /* MOSTRA APENAS A SEÇÃO FINAL COM OS ITENS COBRADOS */
+    /* Oculta tudo que é para edição e botões */
+    .section:not(.resumo-final), .btn, footer, .small, .ocultar-print,
+    #outrosDesc, /* Oculta a descrição de outros */
+    input[type="number"], /* Oculta TODOS os campos de valor de edição */
+    input[type="checkbox"], /* Oculta o checkbox da mão de obra */
+    table:not(#cobrancaTable):not(.resumo-final table) /* Oculta as tabelas de edição de serviços/peças */
+    { 
+        display: none !important; 
+    }
+
+    /* Oculta os campos de cliente e aparelho e mostra apenas o valor no lugar */
+    #cliente, #descricaoAparelho, label { display: block !important; }
+    #cliente, #descricaoAparelho { 
+        border: none !important; 
+        padding: 0 !important; 
+        margin: 0 !important;
+        height: auto !important;
+        width: auto !important;
+        box-sizing: content-box !important;
+        font-weight: bold;
+    }
+
+    /* Formatação para o resumo final */
     .resumo-final { border: none; padding: 0; background: none; margin-top: 20px; }
     .tabela-cobranca table, .resumo-final table { border: 1px solid #333; }
     .tabela-cobranca th, .tabela-cobranca td, .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
     
+    /* Ajuste de texto do total */
     #totalTexto::after {
       content: "Total (Serviços + Peças)";
     }
