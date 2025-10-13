@@ -5,212 +5,230 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Orçamento</title>
 <style>
-  /* Estilos Gerais */
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:980px;margin:18px auto;padding:12px}
-  h1{margin-bottom:6px}
-  label{display:block;margin-top:10px;font-weight:600}
-  input[type="text"], input[type="number"], select, textarea{width:100%;padding:8px;margin-top:6px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box}
-  .row{display:flex;gap:8px}
-  .row > *{flex:1}
-  .section{margin-top:14px;padding:12px;border:1px solid #eee;border-radius:8px;background:#fafafa}
-  table{width:100%;border-collapse:collapse;margin-top:8px}
-  th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}
-  .right{text-align:right}
-  .btn{display:inline-block;padding:8px 12px;margin-top:10px;border-radius:6px;border:0;background:#0b76ef;color:white;cursor:pointer}
-  .btn.secondary{background:#6c757d}
-  .small{font-size:0.9rem;color:#555}
-  footer{margin-top:18px;font-size:0.85rem;color:#444;border-top:1px dashed #ddd;padding-top:12px}
-  .tabela-cobranca{margin-top:20px; border-top: 1px solid #ddd; padding-top: 10px;}
-  .tabela-cobranca h3{margin-bottom: 0;}
-  .tabela-cobranca table{border: 1px solid #ccc; border-radius: 4px; margin-bottom: 20px;}
-  .tabela-cobranca th{background-color: #eee;}
-  @media(max-width:700px){ .two-cols{flex-direction:column} }
+  /* Estilos Gerais */
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:980px;margin:18px auto;padding:12px}
+  h1{margin-bottom:6px}
+  label{display:block;margin-top:10px;font-weight:600}
+  input[type="text"], input[type="number"], select, textarea{width:100%;padding:8px;margin-top:6px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box}
+  .row{display:flex;gap:8px}
+  .row > *{flex:1}
+  .section{margin-top:14px;padding:12px;border:1px solid #eee;border-radius:8px;background:#fafafa}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}
+  .right{text-align:right}
+  .btn{display:inline-block;padding:8px 12px;margin-top:10px;border-radius:6px;border:0;background:#0b76ef;color:white;cursor:pointer}
+  .btn.secondary{background:#6c757d}
+  .small{font-size:0.9rem;color:#555}
+  footer{margin-top:18px;font-size:0.85rem;color:#444;border-top:1px dashed #ddd;padding-top:12px}
+  .tabela-cobranca{margin-top:20px; border-top: 1px solid #ddd; padding-top: 10px;}
+  .tabela-cobranca h3{margin-bottom: 0;}
+  .tabela-cobranca table{border: 1px solid #ccc; border-radius: 4px; margin-bottom: 20px;}
+  .tabela-cobranca th{background-color: #eee;}
+  @media(max-width:700px){ .two-cols{flex-direction:column} }
 
-  /* Estilos de Impressão (Gerar PDF) */
-  @media print {
-    body { margin: 0; padding: 0; max-width: none; font-size: 10pt; }
-    .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
-    .resumo-final { border: none; padding: 0; background: none; margin-top: 20px; }
-    .tabela-cobranca table, .resumo-final table { border: 1px solid #333; }
-    .tabela-cobranca th, .tabela-cobranca td, .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
-  }
+  /* Estilos de Impressão (Gerar PDF) */
+  @media print {
+    body { margin: 0; padding: 0; max-width: none; font-size: 10pt; }
+    .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
+    .resumo-final { border: none; padding: 0; background: none; margin-top: 20px; }
+    .tabela-cobranca table, .resumo-final table { border: 1px solid #333; }
+    .tabela-cobranca th, .tabela-cobranca td, .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
+    /* NOVO CÓDIGO 1 APLICADO AQUI */
+    #totalTexto::after {
+      content: "Total (Serviços + Peças)";
+    }
+    #totalTexto {
+      visibility: hidden;
+      position: relative;
+    }
+    #totalTexto::after {
+      visibility: visible;
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+    /* FIM NOVO CÓDIGO 1 */
+  }
 </style>
 </head>
 <body>
-  <h1>Orçamento</h1>
+  <h1>Orçamento</h1>
 
-  <label>Cliente</label>
-  <input id="cliente" type="text" placeholder="Nome do cliente (opcional)" />
+  <label>Cliente</label>
+  <input id="cliente" type="text" placeholder="Nome do cliente (opcional)" />
 
-  <label>Descrição do aparelho</label>
-  <input id="descricaoAparelho" type="text" placeholder="Ex: Notebook Acer E5-511 / Desktop HP" />
+  <label>Descrição do aparelho</label>
+  <input id="descricaoAparelho" type="text" placeholder="Ex: Notebook Acer E5-511 / Desktop HP" />
 
-  <div class="section">
-    <h3>Serviços (valores editáveis)</h3>
-    <table id="servicosTable">
-      <thead><tr><th>Serviço</th><th>Valor (R$)</th></tr></thead>
-      <tbody>
-        <tr><td>Limpeza</td><td><input class="valor servico" data-item="Limpeza" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Mão de Obra</td><td><input class="valor servico" data-item="Mão de Obra" type="number" min="0" step="0.01" value="120" /></td></tr>
-        <tr><td>Formatação</td><td><input class="valor servico" data-item="Formatação" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Instalação de Windows</td><td><input class="valor servico" data-item="Instalação de Windows" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Backup de dados</td><td><input class="valor servico" data-item="Backup de dados" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Troca de pasta térmica</td><td><input class="valor servico" data-item="Troca de pasta térmica" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Reballing</td><td><input class="valor servico" data-item="Reballing" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Atualização de BIOS</td><td><input class="valor servico" data-item="Atualização de BIOS" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Diagnóstico</td><td><input class="valor servico" data-item="Diagnóstico" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Troca de teclado (mão de obra)</td><td><input class="valor servico" data-item="Troca de teclado (mão de obra)" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Instalação de drivers</td><td><input class="valor servico" data-item="Instalação de drivers" type="number" min="0" step="0.01" value="0" /></td></tr>
-      </tbody>
-    </table>
-  </div>
+  <div class="section">
+    <h3>Serviços (valores editáveis)</h3>
+    <table id="servicosTable">
+      <thead><tr><th>Serviço</th><th>Valor (R$)</th></tr></thead>
+      <tbody>
+        <tr><td>Limpeza</td><td><input class="valor servico" data-item="Limpeza" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Mão de Obra</td><td><input class="valor servico" data-item="Mão de Obra" type="number" min="0" step="0.01" value="120" /></td></tr>
+        <tr><td>Formatação</td><td><input class="valor servico" data-item="Formatação" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Instalação de Windows</td><td><input class="valor servico" data-item="Instalação de Windows" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Backup de dados</td><td><input class="valor servico" data-item="Backup de dados" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Troca de pasta térmica</td><td><input class="valor servico" data-item="Troca de pasta térmica" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Reballing</td><td><input class="valor servico" data-item="Reballing" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Atualização de BIOS</td><td><input class="valor servico" data-item="Atualização de BIOS" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Diagnóstico</td><td><input class="valor servico" data-item="Diagnóstico" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Troca de teclado (mão de obra)</td><td><input class="valor servico" data-item="Troca de teclado (mão de obra)" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Instalação de drivers</td><td><input class="valor servico" data-item="Instalação de drivers" type="number" min="0" step="0.01" value="0" /></td></tr>
+      </tbody>
+    </table>
+  </div>
 
-  <div class="section">
-    <h3>Peças (valores editáveis)</h3>
-    <table id="pecasTable">
-      <thead><tr><th>Peça</th><th>Valor (R$)</th></tr></thead>
-      <tbody>
-        <tr><td>SSD</td><td><input class="valor peca" data-item="SSD" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>HD</td><td><input class="valor peca" data-item="HD" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>RAM</td><td><input class="valor peca" data-item="RAM" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Teclado</td><td><input class="valor peca" data-item="Teclado" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Tela / Display</td><td><input class="valor peca" data-item="Tela" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Bateria</td><td><input class="valor peca" data-item="Bateria" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Cooler / Ventoinha</td><td><input class="valor peca" data-item="Cooler" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>DC Jack</td><td><input class="valor peca" data-item="DC Jack" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Fonte (PSU)</td><td><input class="valor peca" data-item="Fonte" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Placa-mãe</td><td><input class="valor peca" data-item="Placa-mãe" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Carcaça / Gabinete</td><td><input class="valor peca" data-item="Carcaça" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Flat / Cabo Flat</td><td><input class="valor peca" data-item="Flat" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Placa de vídeo (GPU)</td><td><input class="valor peca" data-item="GPU" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Outros (descrição abaixo)</td><td><input class="valor peca" data-item="Outros" type="number" min="0" step="0.01" value="0" /></td></tr>
-      </tbody>
-    </table>
-    <label>Descrição para "Outros"</label>
-    <input id="outrosDesc" type="text" placeholder="Descreva peça/serviço se usar o campo 'Outros'"/>
-  </div>
-  
-  <div class="section ocultar-print">
-      <label>Observações / Condições de Serviço (não aparece no resumo final)</label>
-      <textarea id="observacoes" rows="3" placeholder="Ex: Garantia de 90 dias para serviço; Prazo de 3 dias úteis."></textarea>
-  </div>
+  <div class="section">
+    <h3>Peças (valores editáveis)</h3>
+    <table id="pecasTable">
+      <thead><tr><th>Peça</th><th>Valor (R$)</th></tr></thead>
+      <tbody>
+        <tr><td>SSD</td><td><input class="valor peca" data-item="SSD" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>HD</td><td><input class="valor peca" data-item="HD" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>RAM</td><td><input class="valor peca" data-item="RAM" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Teclado</td><td><input class="valor peca" data-item="Teclado" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Tela / Display</td><td><input class="valor peca" data-item="Tela" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Bateria</td><td><input class="valor peca" data-item="Bateria" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Cooler / Ventoinha</td><td><input class="valor peca" data-item="Cooler" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>DC Jack</td><td><input class="valor peca" data-item="DC Jack" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Fonte (PSU)</td><td><input class="valor peca" data-item="Fonte" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Placa-mãe</td><td><input class="valor peca" data-item="Placa-mãe" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Carcaça / Gabinete</td><td><input class="valor peca" data-item="Carcaça" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Flat / Cabo Flat</td><td><input class="valor peca" data-item="Flat" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Placa de vídeo (GPU)</td><td><input class="valor peca" data-item="GPU" type="number" min="0" step="0.01" value="0" /></td></tr>
+        <tr><td>Outros (descrição abaixo)</td><td><input class="valor peca" data-item="Outros" type="number" min="0" step="0.01" value="0" /></td></tr>
+      </tbody>
+    </table>
+    <label>Descrição para "Outros"</label>
+    <input id="outrosDesc" type="text" placeholder="Descreva peça/serviço se usar o campo 'Outros'"/>
+  </div>
+  
+  <div class="section ocultar-print">
+      <label>Observações / Condições de Serviço (não aparece no resumo final)</label>
+      <textarea id="observacoes" rows="3" placeholder="Ex: Garantia de 90 dias para serviço; Prazo de 3 dias úteis."></textarea>
+  </div>
 
-  <div class="section resumo-final">
-    <div class="tabela-cobranca">
-        <h3>Itens Orçados</h3>
-        <table id="cobrancaTable">
-            <thead>
-                <tr><th>Item</th><th class="right">Valor (R$)</th></tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
+  <div class="section resumo-final">
+    <div class="tabela-cobranca">
+        <h3>Itens Orçados</h3>
+        <table id="cobrancaTable">
+            <thead>
+                <tr><th>Item</th><th class="right">Valor (R$)</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
 
-    <label>Resumo Final</label>
-    <table>
-      <tbody>
-        <tr><td> Total (Serviços + Peças com lucro incluso) </td><td class="right" id="custo"><strong>R$ 0,00</strong></td></tr>
-      </tbody>
-    </table>
-    
-    <div id="observacoesPrint" style="margin-top: 15px; font-size: 0.95rem;">
-        <p style="font-weight: bold;">Observações:</p>
-        <p id="obsContent" style="white-space: pre-wrap; margin-top: 5px;"></p>
-    </div>
+    <label>Resumo Final</label>
+    <table>
+      <tbody>
+        <tr>
+            <td id="totalTexto">Total (Serviços + Peças com lucro incluso)</td>
+            <td class="right" id="custo"><strong>R$ 0,00</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div id="observacoesPrint" style="margin-top: 15px; font-size: 0.95rem;">
+        <p style="font-weight: bold;">Observações:</p>
+        <p id="obsContent" style="white-space: pre-wrap; margin-top: 5px;"></p>
+    </div>
 
-    <div style="margin-top:12px">
-      <button class="btn" onclick="recalcular()">Calcular</button>
-      <button class="btn secondary" onclick="window.print()">Gerar PDF / Imprimir</button>
-    </div>
+    <div style="margin-top:12px">
+      <button class="btn" onclick="recalcular()">Calcular</button>
+      <button class="btn secondary" onclick="window.print()">Gerar PDF / Imprimir</button>
+    </div>
 
-    <footer class="ocultar-print">
-      Dica: preencha o campo "Cliente" e "Descrição do aparelho" antes de gerar o PDF. Use "Salvar como PDF" no diálogo de impressão.
-    </footer>
-  </div>
+    <footer class="ocultar-print">
+      Dica: preencha o campo "Cliente" e "Descrição do aparelho" antes de gerar o PDF. Use "Salvar como PDF" no diálogo de impressão.
+    </footer>
+  </div>
 
 <script>
 function formatBR(value){
-  const numericValue = parseFloat(value) || 0;
-  return numericValue.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+  const numericValue = parseFloat(value) || 0;
+  return numericValue.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
 function sumValues(selector){
-  const nodes = document.querySelectorAll(selector);
-  return Array.from(nodes).map(i=>parseFloat(i.value||0)).reduce((a,b)=>a+b,0);
+  const nodes = document.querySelectorAll(selector);
+  return Array.from(nodes).map(i=>parseFloat(i.value||0)).reduce((a,b)=>a+b,0);
 }
 
 function getItensCobrados(){
-    const itens = [];
-    const selectors = ['input.servico', 'input.peca'];
-    selectors.forEach(selector => {
-        document.querySelectorAll(selector).forEach(input => {
-            const valor = parseFloat(input.value || 0);
-            if (valor > 0) {
-                const item = input.getAttribute('data-item');
-                let nome = item;
-                let valorFinal = valor;
+    const itens = [];
+    const selectors = ['input.servico', 'input.peca'];
+    selectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(input => {
+            const valor = parseFloat(input.value || 0);
+            if (valor > 0) {
+                const item = input.getAttribute('data-item');
+                let nome = item;
+                let valorFinal = valor;
 
-                // Aplica lucro de 25% apenas em peças
-                if (selector === 'input.peca') {
-                    valorFinal = valor * 1.25;
-                }
+                // Aplica lucro de 25% apenas em peças
+                if (selector === 'input.peca') {
+                    valorFinal = valor * 1.25;
+                }
 
-                if (item === 'Outros' && document.getElementById('outrosDesc').value.trim() !== "") {
-                    nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
-                }
+                if (item === 'Outros' && document.getElementById('outrosDesc').value.trim() !== "") {
+                    nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
+                }
 
-                itens.push({ nome: nome, valor: valorFinal });
-            }
-        });
-    });
-    return itens;
+                itens.push({ nome: nome, valor: valorFinal });
+            }
+        });
+    });
+    return itens;
 }
 
 function recalcular(){
-  const totalServicos = sumValues('input.servico');
-  const totalPecas = sumValues('input.peca') * 1.25; // aplica 25% sobre peças
-  const custo = totalServicos + totalPecas;
+  const totalServicos = sumValues('input.servico');
+  const totalPecas = sumValues('input.peca') * 1.25; // aplica 25% sobre peças
+  const custo = totalServicos + totalPecas;
 
-  document.getElementById('custo').innerText = 'R$ ' + formatBR(custo);
+  document.getElementById('custo').innerText = 'R$ ' + formatBR(custo);
 
-  const tabelaCorpo = document.querySelector('#cobrancaTable tbody');
-  tabelaCorpo.innerHTML = '';
-  const itens = getItensCobrados();
-  if (itens.length > 0) {
-      itens.forEach(item => {
-          const row = tabelaCorpo.insertRow();
-          row.insertCell().innerText = item.nome;
-          const valorCell = row.insertCell();
-          valorCell.className = 'right';
-          valorCell.innerText = 'R$ ' + formatBR(item.valor);
-      });
-  } else {
-      const row = tabelaCorpo.insertRow();
-      row.insertCell().innerText = 'Nenhum item/serviço cobrado.';
-      row.insertCell().colSpan = 2;
-      row.cells[0].style.textAlign = 'center';
-  }
+  const tabelaCorpo = document.querySelector('#cobrancaTable tbody');
+  tabelaCorpo.innerHTML = '';
+  const itens = getItensCobrados();
+  if (itens.length > 0) {
+      itens.forEach(item => {
+          const row = tabelaCorpo.insertRow();
+          row.insertCell().innerText = item.nome;
+          const valorCell = row.insertCell();
+          valorCell.className = 'right';
+          valorCell.innerText = 'R$ ' + formatBR(item.valor);
+      });
+  } else {
+      const row = tabelaCorpo.insertRow();
+      row.insertCell().innerText = 'Nenhum item/serviço cobrado.';
+      row.insertCell().colSpan = 2;
+      row.cells[0].style.textAlign = 'center';
+  }
 
-  const obsText = document.getElementById('observacoes').value.trim();
-  document.getElementById('obsContent').innerText = obsText;
-  document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
+  const obsText = document.getElementById('observacoes').value.trim();
+  document.getElementById('obsContent').innerText = obsText;
+  document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
 }
 
 function attachListeners(){
-  document.querySelectorAll('input.valor').forEach(el=>el.addEventListener('input', recalcular));
-  document.getElementById('outrosDesc').addEventListener('input', recalcular);
-  document.getElementById('observacoes').addEventListener('input', recalcular);
-  document.getElementById('cliente').addEventListener('input', ()=>{});
-  document.getElementById('descricaoAparelho').addEventListener('input', ()=>{});
+  document.querySelectorAll('input.valor').forEach(el=>el.addEventListener('input', recalcular));
+  document.getElementById('outrosDesc').addEventListener('input', recalcular);
+  document.getElementById('observacoes').addEventListener('input', recalcular);
+  document.getElementById('cliente').addEventListener('input', ()=>{});
+  document.getElementById('descricaoAparelho').addEventListener('input', ()=>{});
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{ attachListeners(); recalcular(); });
 
 window.addEventListener('keydown', function(e){
-  if((e.ctrlKey||e.metaKey) && e.key === 's'){
-    e.preventDefault();
-    window.print();
-  }
+  if((e.ctrlKey||e.metaKey) && e.key === 's'){
+    e.preventDefault();
+    window.print();
+  }
 });
 </script>
 </body>
