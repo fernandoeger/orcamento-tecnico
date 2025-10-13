@@ -24,6 +24,8 @@
   .tabela-cobranca h3{margin-bottom: 0;}
   .tabela-cobranca table{border: 1px solid #ccc; border-radius: 4px; margin-bottom: 20px;}
   .tabela-cobranca th{background-color: #eee;}
+  .checkbox-container { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  .checkbox-container input[type="checkbox"] { width: auto; margin-top: 0; }
   @media(max-width:700px){ .two-cols{flex-direction:column} }
 
   /* Estilos de Impressão (Gerar PDF) */
@@ -33,6 +35,7 @@
     .resumo-final { border: none; padding: 0; background: none; margin-top: 20px; }
     .tabela-cobranca table, .resumo-final table { border: 1px solid #333; }
     .tabela-cobranca th, .tabela-cobranca td, .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
+    .lucro-incluso { display: none !important; } /* Esconde "com lucro incluso" no PDF */
   }
 </style>
 </head>
@@ -45,13 +48,22 @@
   <label>Descrição do aparelho</label>
   <input id="descricaoAparelho" type="text" placeholder="Ex: Notebook Acer E5-511 / Desktop HP" />
 
+  <!-- Checkbox para Mão de Obra -->
+  <div class="section">
+    <h3>Mão de Obra</h3>
+    <div class="checkbox-container">
+      <input type="checkbox" id="incluirMaoObra" checked />
+      <label for="incluirMaoObra">Incluir Mão de Obra no orçamento</label>
+    </div>
+    <input id="valorMaoObra" type="number" min="0" step="0.01" value="120" style="margin-top:8px;" />
+  </div>
+
   <div class="section">
     <h3>Serviços (valores editáveis)</h3>
     <table id="servicosTable">
       <thead><tr><th>Serviço</th><th>Valor (R$)</th></tr></thead>
       <tbody>
         <tr><td>Limpeza</td><td><input class="valor servico" data-item="Limpeza" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Mão de Obra</td><td><input class="valor servico" data-item="Mão de Obra" type="number" min="0" step="0.01" value="120" /></td></tr>
         <tr><td>Formatação</td><td><input class="valor servico" data-item="Formatação" type="number" min="0" step="0.01" value="0" /></td></tr>
         <tr><td>Instalação de Windows</td><td><input class="valor servico" data-item="Instalação de Windows" type="number" min="0" step="0.01" value="0" /></td></tr>
         <tr><td>Backup de dados</td><td><input class="valor servico" data-item="Backup de dados" type="number" min="0" step="0.01" value="0" /></td></tr>
@@ -109,7 +121,13 @@
     <label>Resumo Final</label>
     <table>
       <tbody>
-        <tr><td> Total (Serviços + Peças com lucro incluso) </td><td class="right" id="custo"><strong>R$ 0,00</strong></td></tr>
+        <tr>
+          <td>
+            Total (Serviços + Peças 
+            <span class="lucro-incluso">com lucro incluso</span>)
+          </td>
+          <td class="right" id="custo"><strong>R$ 0,00</strong></td>
+        </tr>
       </tbody>
     </table>
     
@@ -141,38 +159,57 @@ function sumValues(selector){
 
 function getItensCobrados(){
     const itens = [];
-    const selectors = ['input.servico', 'input.peca'];
-    selectors.forEach(selector => {
-        document.querySelectorAll(selector).forEach(input => {
-            const valor = parseFloat(input.value || 0);
-            if (valor > 0) {
-                const item = input.getAttribute('data-item');
-                let nome = item;
-                let valorFinal = valor;
 
-                // Aplica lucro de 25% apenas em peças
-                if (selector === 'input.peca') {
-                    valorFinal = valor * 1.25;
-                }
+    // Adiciona Mão de Obra se selecionada
+    const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
+    const valorMaoObra = parseFloat(document.getElementById('valorMaoObra').value || 0);
+    if (incluirMaoObra && valorMaoObra > 0) {
+        itens.push({ nome: "Mão de Obra", valor: valorMaoObra });
+    }
 
-                if (item === 'Outros' && document.getElementById('outrosDesc').value.trim() !== "") {
-                    nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
-                }
-
-                itens.push({ nome: nome, valor: valorFinal });
-            }
-        });
+    // Serviços (excluindo Mão de Obra)
+    document.querySelectorAll('input.servico').forEach(input => {
+        const valor = parseFloat(input.value || 0);
+        if (valor > 0) {
+            const item = input.getAttribute('data-item');
+            itens.push({ nome: item, valor: valor });
+        }
     });
+
+    // Peças (com lucro de 25%)
+    document.querySelectorAll('input.peca').forEach(input => {
+        const valor = parseFloat(input.value || 0);
+        if (valor > 0) {
+            const item = input.getAttribute('data-item');
+            let nome = item;
+            const valorFinal = valor * 1.25;
+
+            if (item === 'Outros' && document.getElementById('outrosDesc').value.trim() !== "") {
+                nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
+            }
+
+            itens.push({ nome: nome, valor: valorFinal });
+        }
+    });
+
     return itens;
 }
 
 function recalcular(){
+  // Total de serviços (sem Mão de Obra)
   const totalServicos = sumValues('input.servico');
-  const totalPecas = sumValues('input.peca') * 1.25; // aplica 25% sobre peças
-  const custo = totalServicos + totalPecas;
+  
+  // Mão de Obra (se incluída)
+  const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
+  const valorMaoObra = incluirMaoObra ? parseFloat(document.getElementById('valorMaoObra').value || 0) : 0;
 
+  // Peças com lucro
+  const totalPecas = sumValues('input.peca') * 1.25;
+
+  const custo = totalServicos + valorMaoObra + totalPecas;
   document.getElementById('custo').innerText = 'R$ ' + formatBR(custo);
 
+  // Atualiza tabela de cobrança
   const tabelaCorpo = document.querySelector('#cobrancaTable tbody');
   tabelaCorpo.innerHTML = '';
   const itens = getItensCobrados();
@@ -191,6 +228,7 @@ function recalcular(){
       row.cells[0].style.textAlign = 'center';
   }
 
+  // Observações
   const obsText = document.getElementById('observacoes').value.trim();
   document.getElementById('obsContent').innerText = obsText;
   document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
@@ -202,6 +240,10 @@ function attachListeners(){
   document.getElementById('observacoes').addEventListener('input', recalcular);
   document.getElementById('cliente').addEventListener('input', ()=>{});
   document.getElementById('descricaoAparelho').addEventListener('input', ()=>{});
+  
+  // Novos listeners
+  document.getElementById('incluirMaoObra').addEventListener('change', recalcular);
+  document.getElementById('valorMaoObra').addEventListener('input', recalcular);
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{ attachListeners(); recalcular(); });
