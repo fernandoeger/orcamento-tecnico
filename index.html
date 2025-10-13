@@ -31,13 +31,18 @@
   #maoObraValue input { margin: 0;}
   @media(max-width:700px){ .two-cols{flex-direction:column} }
 
-  /* Estilos de Impressão (Gerar PDF) */
+  /* Estilos de Impressão (Gerar PDF) - ALTERADO AQUI */
   @media print {
     body { margin: 0; padding: 0; max-width: none; font-size: 10pt; }
+    
+    /* Esconde todas as seções de edição e botões */
     .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
+    
+    /* MOSTRA APENAS A SEÇÃO FINAL COM OS ITENS COBRADOS */
     .resumo-final { border: none; padding: 0; background: none; margin-top: 20px; }
     .tabela-cobranca table, .resumo-final table { border: 1px solid #333; }
     .tabela-cobranca th, .tabela-cobranca td, .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
+    
     #totalTexto::after {
       content: "Total (Serviços + Peças)";
     }
@@ -63,7 +68,7 @@
   <label>Descrição do aparelho</label>
   <input id="descricaoAparelho" type="text" placeholder="Ex: Notebook Acer E5-511 / Desktop HP" />
 
-  <div class="section">
+  <div class="section" id="servicosSection">
     <h3>Serviços (valores editáveis)</h3>
     <table id="servicosTable">
       <thead><tr><th>Serviço</th><th>Valor (R$)</th></tr></thead>
@@ -91,7 +96,7 @@
     </table>
   </div>
 
-  <div class="section">
+  <div class="section" id="pecasSection">
     <h3>Peças (valores editáveis)</h3>
     <table id="pecasTable">
       <thead><tr><th>Peça</th><th>Valor (R$)</th></tr></thead>
@@ -170,7 +175,7 @@ function sumValues(selector){
 
 function getItensCobrados(){
     const itens = [];
-    // Se a Mão de Obra estiver marcada, adiciona-a como um serviço.
+    // 1. Trata a Mão de Obra
     const checkMaoDeObra = document.getElementById('checkMaoDeObra');
     const valorMaoDeObra = document.getElementById('valorMaoDeObra');
 
@@ -187,7 +192,7 @@ function getItensCobrados(){
             const valor = parseFloat(input.value || 0);
             const item = input.getAttribute('data-item');
 
-            // Ignora o valor de Mão de Obra aqui, pois já foi tratado acima
+            // Ignora o valor de Mão de Obra aqui
             if (item === 'Mão de Obra') {
                 return; 
             }
@@ -217,7 +222,7 @@ function recalcular(){
     const valorMaoDeObra = document.getElementById('valorMaoDeObra');
     const totalMaoDeObra = document.getElementById('checkMaoDeObra').checked ? parseFloat(valorMaoDeObra.value) : 0;
     
-    // Calcula o total dos outros serviços (excluindo Mão de Obra)
+    // Calcula o total dos outros serviços (excluindo Mão de Obra, usando o seletor :not)
     const totalOutrosServicos = sumValues('input.servico:not(#valorMaoDeObra)'); 
 
     const totalServicos = totalMaoDeObra + totalOutrosServicos;
