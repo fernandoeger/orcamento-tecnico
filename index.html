@@ -10,14 +10,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Orçamento Técnico">
 
-  <!-- Ícones para iOS (obrigatório para aparecer na tela inicial) -->
+  <!-- Ícones para iOS -->
   <link rel="apple-touch-icon" sizes="180x180" href="icon-192.png">
   <link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
   <link rel="apple-touch-icon" sizes="120x120" href="icon-120.png">
   <link rel="apple-touch-icon" sizes="76x76" href="icon-76.png">
   <link rel="apple-touch-icon" href="icon-192.png">
 
-  <!-- Splash Screen para iOS (opcional - usa CSS) -->
   <style>
     @media screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) {
       body::before {
@@ -33,10 +32,7 @@
     @keyframes fadeOut {
       to { opacity: 0; visibility: hidden; }
     }
-  </style>
 
-  <!-- Seu CSS existente -->
-  <style>
     /* Estilos Gerais */
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:980px;margin:18px auto;padding:12px}
     h1{margin-bottom:6px}
@@ -50,6 +46,7 @@
     .right{text-align:right}
     .btn{display:inline-block;padding:8px 12px;margin-top:10px;border-radius:6px;border:0;background:#0b76ef;color:white;cursor:pointer}
     .btn.secondary{background:#6c757d}
+    .btn.history{background:#28a745}
     .small{font-size:0.9rem;color:#555}
     footer{margin-top:18px;font-size:0.85rem;color:#444;border-top:1px dashed #ddd;padding-top:12px}
     .tabela-cobranca{margin-top:20px; border-top: 1px solid #ddd; padding-top: 10px;}
@@ -58,17 +55,42 @@
     .tabela-cobranca th{background-color: #eee;}
     .checkbox-container { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
     .checkbox-container input[type="checkbox"] { width: auto; margin-top: 0; }
+    .servico-item { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+    .servico-item input[type="checkbox"] { width: auto; margin: 0; }
+    .servico-item input[type="number"] { flex: 1; }
     @media(max-width:700px){ .two-cols{flex-direction:column} }
 
-    /* Estilos de Impressão (Gerar PDF) */
+    /* Estilos de Impressão */
     @media print {
       body { margin: 0; padding: 0; max-width: none; font-size: 10pt; }
       .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
       .resumo-final { border: none; padding: 0; background: none; margin-top: 20px; }
       .tabela-cobranca table, .resumo-final table { border: 1px solid #333; }
       .tabela-cobranca th, .tabela-cobranca td, .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
-      .lucro-incluso { display: none !important; } /* Esconde "com lucro incluso" no PDF */
+      .lucro-incluso { display: none !important; }
     }
+
+    /* Modal de Histórico */
+    #modalHistorico {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 10000;
+    }
+    #modalHistorico .content {
+      background: white;
+      margin: 40px auto;
+      padding: 20px;
+      max-width: 800px;
+      max-height: 80vh;
+      overflow-y: auto;
+      border-radius: 8px;
+    }
+    #modalHistorico h2 { margin-top: 0; }
+    #modalHistorico ul { list-style: none; padding: 0; }
+    #modalHistorico li { padding: 10px 0; border-bottom: 1px solid #eee; }
+    #modalHistorico .close { float: right; cursor: pointer; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -84,29 +106,17 @@
   <div class="section">
     <h3>Mão de Obra</h3>
     <div class="checkbox-container">
-      <input type="checkbox" id="incluirMaoObra" checked />
+      <input type="checkbox" id="incluirMaoObra" />
       <label for="incluirMaoObra">Incluir Mão de Obra no orçamento</label>
     </div>
-    <input id="valorMaoObra" type="number" min="0" step="0.01" value="120" style="margin-top:8px;" />
+    <input id="valorMaoObra" type="number" min="0" step="0.01" value="120" style="margin-top:8px;" disabled />
   </div>
 
   <div class="section">
-    <h3>Serviços (valores editáveis)</h3>
-    <table id="servicosTable">
-      <thead><tr><th>Serviço</th><th>Valor (R$)</th></tr></thead>
-      <tbody>
-        <tr><td>Limpeza</td><td><input class="valor servico" data-item="Limpeza" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Formatação</td><td><input class="valor servico" data-item="Formatação" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Instalação de Windows</td><td><input class="valor servico" data-item="Instalação de Windows" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Backup de dados</td><td><input class="valor servico" data-item="Backup de dados" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Troca de pasta térmica</td><td><input class="valor servico" data-item="Troca de pasta térmica" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Reballing</td><td><input class="valor servico" data-item="Reballing" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Atualização de BIOS</td><td><input class="valor servico" data-item="Atualização de BIOS" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Diagnóstico</td><td><input class="valor servico" data-item="Diagnóstico" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Troca de teclado (mão de obra)</td><td><input class="valor servico" data-item="Troca de teclado (mão de obra)" type="number" min="0" step="0.01" value="0" /></td></tr>
-        <tr><td>Instalação de drivers</td><td><input class="valor servico" data-item="Instalação de drivers" type="number" min="0" step="0.01" value="0" /></td></tr>
-      </tbody>
-    </table>
+    <h3>Serviços (selecione os desejados)</h3>
+    <div id="servicosContainer">
+      <!-- Será preenchido por JS com checkboxes + inputs -->
+    </div>
   </div>
 
   <div class="section">
@@ -163,13 +173,15 @@
       </tbody>
     </table>
     
-    <div id="observacoesPrint" style="margin-top: 15px; font-size: 0.95rem;">
+    <div id="observacoesPrint" style="margin-top: 15px; font-size: 0.95rem; display: none;">
         <p style="font-weight: bold;">Observações:</p>
         <p id="obsContent" style="white-space: pre-wrap; margin-top: 5px;"></p>
     </div>
 
     <div style="margin-top:12px">
       <button class="btn" onclick="recalcular()">Calcular</button>
+      <button class="btn secondary" onclick="salvarOrcamento()">Salvar Orçamento</button>
+      <button class="btn history" onclick="mostrarHistorico()">Histórico</button>
       <button class="btn secondary" onclick="window.print()">Gerar PDF / Imprimir</button>
     </div>
 
@@ -178,7 +190,31 @@
     </footer>
   </div>
 
+  <!-- Modal de Histórico -->
+  <div id="modalHistorico">
+    <div class="content">
+      <span class="close" onclick="fecharHistorico()">&times;</span>
+      <h2>Histórico de Orçamentos</h2>
+      <ul id="listaHistorico"></ul>
+      <p style="font-size:0.9em; color:#666;">Clique em um orçamento para carregá-lo.</p>
+    </div>
+  </div>
+
 <script>
+// Preços sugeridos para serviços
+const PRECOS_SUGERIDOS = {
+  "Limpeza": 50,
+  "Formatação": 80,
+  "Instalação de Windows": 100,
+  "Backup de dados": 60,
+  "Troca de pasta térmica": 70,
+  "Reballing": 250,
+  "Atualização de BIOS": 40,
+  "Diagnóstico": 30,
+  "Troca de teclado (mão de obra)": 90,
+  "Instalação de drivers": 30
+};
+
 function formatBR(value){
   const numericValue = parseFloat(value) || 0;
   return numericValue.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
@@ -189,26 +225,61 @@ function sumValues(selector){
   return Array.from(nodes).map(i=>parseFloat(i.value||0)).reduce((a,b)=>a+b,0);
 }
 
+// Renderiza os checkboxes de serviços com base nos preços sugeridos
+function renderizarServicos() {
+  const container = document.getElementById('servicosContainer');
+  container.innerHTML = '';
+  for (const [servico, preco] of Object.entries(PRECOS_SUGERIDOS)) {
+    const div = document.createElement('div');
+    div.className = 'servico-item';
+    div.innerHTML = `
+      <input type="checkbox" id="chk_${servico}" data-item="${servico}" />
+      <label for="chk_${servico}">${servico}</label>
+      <input type="number" class="valor servico" data-item="${servico}" min="0" step="0.01" value="${preco}" disabled />
+    `;
+    container.appendChild(div);
+  }
+
+  // Adicionar listeners aos checkboxes
+  document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', function() {
+      const input = this.closest('.servico-item').querySelector('input[type="number"]');
+      input.disabled = !this.checked;
+      if (!this.checked) input.value = 0;
+      recalcular();
+    });
+  });
+
+  // Adicionar listeners aos inputs de valor (caso o usuário edite)
+  document.querySelectorAll('#servicosContainer input[type="number"]').forEach(input => {
+    input.addEventListener('input', recalcular);
+  });
+}
+
 function getItensCobrados(){
     const itens = [];
 
-    // Adiciona Mão de Obra se selecionada
+    // Mão de Obra
     const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
     const valorMaoObra = parseFloat(document.getElementById('valorMaoObra').value || 0);
     if (incluirMaoObra && valorMaoObra > 0) {
         itens.push({ nome: "Mão de Obra", valor: valorMaoObra });
     }
 
-    // Serviços (excluindo Mão de Obra)
-    document.querySelectorAll('input.servico').forEach(input => {
-        const valor = parseFloat(input.value || 0);
-        if (valor > 0) {
-            const item = input.getAttribute('data-item');
-            itens.push({ nome: item, valor: valor });
+    // Serviços selecionados
+    document.querySelectorAll('#servicosContainer .servico-item').forEach(itemDiv => {
+        const checkbox = itemDiv.querySelector('input[type="checkbox"]');
+        const input = itemDiv.querySelector('input[type="number"]');
+        if (checkbox.checked) {
+            const valor = parseFloat(input.value || 0);
+            if (valor > 0) {
+                const nome = input.getAttribute('data-item');
+                itens.push({ nome, valor });
+            }
         }
     });
 
-    // Peças (com lucro de 25%)
+    // Peças com lucro
     document.querySelectorAll('input.peca').forEach(input => {
         const valor = parseFloat(input.value || 0);
         if (valor > 0) {
@@ -228,12 +299,20 @@ function getItensCobrados(){
 }
 
 function recalcular(){
-  // Total de serviços (sem Mão de Obra)
-  const totalServicos = sumValues('input.servico');
-  
-  // Mão de Obra (se incluída)
+  // Mão de Obra
   const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
   const valorMaoObra = incluirMaoObra ? parseFloat(document.getElementById('valorMaoObra').value || 0) : 0;
+  document.getElementById('valorMaoObra').disabled = !incluirMaoObra;
+
+  // Serviços: só somar os marcados
+  let totalServicos = 0;
+  document.querySelectorAll('#servicosContainer .servico-item').forEach(itemDiv => {
+    const checkbox = itemDiv.querySelector('input[type="checkbox"]');
+    const input = itemDiv.querySelector('input[type="number"]');
+    if (checkbox.checked) {
+      totalServicos += parseFloat(input.value || 0);
+    }
+  });
 
   // Peças com lucro
   const totalPecas = sumValues('input.peca') * 1.25;
@@ -267,23 +346,126 @@ function recalcular(){
 }
 
 function attachListeners(){
-  document.querySelectorAll('input.valor').forEach(el=>el.addEventListener('input', recalcular));
-  document.getElementById('outrosDesc').addEventListener('input', recalcular);
-  document.getElementById('observacoes').addEventListener('input', recalcular);
-  document.getElementById('cliente').addEventListener('input', ()=>{});
-  document.getElementById('descricaoAparelho').addEventListener('input', ()=>{});
-  
-  // Novos listeners
+  // Peças, outros, observações
+  document.querySelectorAll('input.peca, #outrosDesc, #observacoes').forEach(el => {
+    el.addEventListener('input', recalcular);
+  });
+
+  // Mão de Obra
   document.getElementById('incluirMaoObra').addEventListener('change', recalcular);
   document.getElementById('valorMaoObra').addEventListener('input', recalcular);
+
+  // Cliente e aparelho (não recalculam, mas podem ser salvos)
+  // Nada a fazer aqui além de salvar depois
 }
 
-document.addEventListener('DOMContentLoaded', ()=>{ attachListeners(); recalcular(); });
+// =============== SALVAR E HISTÓRICO ===============
+
+function salvarOrcamento() {
+  const orcamento = {
+    id: Date.now(),
+    data: new Date().toLocaleString('pt-BR'),
+    cliente: document.getElementById('cliente').value.trim(),
+    aparelho: document.getElementById('descricaoAparelho').value.trim(),
+    maoObraIncluida: document.getElementById('incluirMaoObra').checked,
+    valorMaoObra: parseFloat(document.getElementById('valorMaoObra').value) || 0,
+    servicos: Array.from(document.querySelectorAll('#servicosContainer .servico-item')).map(div => {
+      const checkbox = div.querySelector('input[type="checkbox"]');
+      const input = div.querySelector('input[type="number"]');
+      return {
+        nome: input.getAttribute('data-item'),
+        selecionado: checkbox.checked,
+        valor: parseFloat(input.value) || 0
+      };
+    }),
+    pecas: Array.from(document.querySelectorAll('input.peca')).map(input => ({
+      nome: input.getAttribute('data-item'),
+      valor: parseFloat(input.value) || 0
+    })),
+    outrosDesc: document.getElementById('outrosDesc').value.trim(),
+    observacoes: document.getElementById('observacoes').value.trim()
+  };
+
+  let historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+  historico.unshift(orcamento); // adiciona no início
+  localStorage.setItem('orcamentos', JSON.stringify(historico));
+
+  alert('Orçamento salvo com sucesso!');
+  recalcular(); // atualiza total
+}
+
+function carregarOrcamento(orc) {
+  document.getElementById('cliente').value = orc.cliente || '';
+  document.getElementById('descricaoAparelho').value = orc.aparelho || '';
+
+  const maoObraCheck = document.getElementById('incluirMaoObra');
+  maoObraCheck.checked = orc.maoObraIncluida || false;
+  document.getElementById('valorMaoObra').value = orc.valorMaoObra || 120;
+  document.getElementById('valorMaoObra').disabled = !maoObraCheck.checked;
+
+  // Serviços
+  orc.servicos.forEach(serv => {
+    const checkbox = document.querySelector(`#servicosContainer input[data-item="${serv.nome}"][type="checkbox"]`);
+    const input = document.querySelector(`#servicosContainer input[data-item="${serv.nome}"][type="number"]`);
+    if (checkbox && input) {
+      checkbox.checked = serv.selecionado;
+      input.disabled = !serv.selecionado;
+      input.value = serv.valor;
+    }
+  });
+
+  // Peças
+  orc.pecas.forEach(peca => {
+    const input = document.querySelector(`input.peca[data-item="${peca.nome}"]`);
+    if (input) input.value = peca.valor;
+  });
+
+  document.getElementById('outrosDesc').value = orc.outrosDesc || '';
+  document.getElementById('observacoes').value = orc.observacoes || '';
+
+  fecharHistorico();
+  recalcular();
+}
+
+function mostrarHistorico() {
+  const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+  const lista = document.getElementById('listaHistorico');
+  lista.innerHTML = '';
+
+  if (historico.length === 0) {
+    lista.innerHTML = '<li>Nenhum orçamento salvo ainda.</li>';
+  } else {
+    historico.forEach(orc => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <strong>${orc.cliente || 'Cliente não informado'}</strong> - ${orc.aparelho || 'Sem descrição'}<br>
+        <small>${orc.data}</small>
+      `;
+      li.style.cursor = 'pointer';
+      li.onclick = () => carregarOrcamento(orc);
+      lista.appendChild(li);
+    });
+  }
+
+  document.getElementById('modalHistorico').style.display = 'block';
+}
+
+function fecharHistorico() {
+  document.getElementById('modalHistorico').style.display = 'none';
+}
+
+// =============== INICIALIZAÇÃO ===============
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderizarServicos();
+  attachListeners();
+  recalcular();
+});
 
 window.addEventListener('keydown', function(e){
   if((e.ctrlKey||e.metaKey) && e.key === 's'){
     e.preventDefault();
-    window.print();
+    salvarOrcamento();
   }
 });
 </script>
