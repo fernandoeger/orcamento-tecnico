@@ -16,7 +16,6 @@
   <link rel="apple-touch-icon" href="icon-192.png">
 
   <style>
-    /* Seus estilos existentes */
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:980px;margin:18px auto;padding:12px}
     h1{margin-bottom:6px}
     label{display:block;margin-top:10px;font-weight:600}
@@ -39,7 +38,6 @@
     .checkbox-container input[type="checkbox"] { width: auto; margin-top: 0; }
     @media(max-width:700px){ .two-cols{flex-direction:column} }
 
-    /* Estilos de Impressão */
     @media print {
       body { margin: 0; padding: 0; max-width: none; font-size: 10pt; }
       .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
@@ -49,7 +47,6 @@
       .lucro-incluso { display: none !important; }
     }
 
-    /* Estilo para linha de serviço editável */
     .servico-item {
       display: flex;
       align-items: center;
@@ -72,7 +69,6 @@
   <label>Descrição do aparelho</label>
   <input id="descricaoAparelho" type="text" placeholder="Ex: Notebook Dell Inspiron" />
 
-  <!-- Mão de Obra -->
   <div class="section">
     <h3>Mão de Obra</h3>
     <div class="checkbox-container">
@@ -82,13 +78,14 @@
     <input id="valorMaoObra" type="number" min="0" step="0.01" value="120" style="margin-top:8px;" />
   </div>
 
-  <!-- Serviços: checkboxes + valores editáveis -->
   <div class="section">
     <h3>Serviços (marque os desejados e edite os valores)</h3>
-    <div id="servicosContainer"></div>
+    <div id="servicosContainer">
+      <!-- Carregado por JavaScript -->
+      <p style="color:#666; font-style:italic;">Carregando serviços...</p>
+    </div>
   </div>
 
-  <!-- Peças (mantém editáveis) -->
   <div class="section">
     <h3>Peças (valores editáveis)</h3>
     <table id="pecasTable">
@@ -156,7 +153,6 @@
   </div>
 
 <script>
-// Valores padrão iniciais (serão substituídos pelos salvos)
 const VALORES_PADRAO = {
   servicos: {
     "Limpeza": 50,
@@ -173,31 +169,39 @@ const VALORES_PADRAO = {
   maoObra: 120
 };
 
-// Carrega valores salvos ou usa padrão
 function carregarValoresSalvos() {
-  const salvos = JSON.parse(localStorage.getItem('valores_orcamento') || '{}');
-  return {
-    servicos: { ...VALORES_PADRAO.servicos, ...salvos.servicos },
-    maoObra: salvos.maoObra !== undefined ? salvos.maoObra : VALORES_PADRAO.maoObra
-  };
+  try {
+    const salvos = JSON.parse(localStorage.getItem('valores_orcamento') || '{}');
+    // Garante que servicos seja um objeto
+    const servicos = typeof salvos.servicos === 'object' && salvos.servicos !== null ? salvos.servicos : {};
+    return {
+      servicos: { ...VALORES_PADRAO.servicos, ...servicos },
+      maoObra: typeof salvos.maoObra === 'number' ? salvos.maoObra : VALORES_PADRAO.maoObra
+    };
+  } catch (e) {
+    console.warn('Erro ao carregar valores salvos. Usando padrão.', e);
+    return { ...VALORES_PADRAO };
+  }
 }
 
-// Salva valores atuais no localStorage
 function salvarValoresAtuais() {
-  const valores = {
-    servicos: {},
-    maoObra: parseFloat(document.getElementById('valorMaoObra').value) || 0
-  };
+  try {
+    const valores = {
+      servicos: {},
+      maoObra: parseFloat(document.getElementById('valorMaoObra').value) || 0
+    };
 
-  // Coleta valores dos serviços
-  Object.keys(VALORES_PADRAO.servicos).forEach(nome => {
-    const input = document.querySelector(`input[data-servico="${nome}"]`);
-    if (input) {
-      valores.servicos[nome] = parseFloat(input.value) || 0;
-    }
-  });
+    Object.keys(VALORES_PADRAO.servicos).forEach(nome => {
+      const input = document.querySelector(`input[data-servico="${nome}"]`);
+      if (input) {
+        valores.servicos[nome] = parseFloat(input.value) || 0;
+      }
+    });
 
-  localStorage.setItem('valores_orcamento', JSON.stringify(valores));
+    localStorage.setItem('valores_orcamento', JSON.stringify(valores));
+  } catch (e) {
+    console.error('Erro ao salvar valores:', e);
+  }
 }
 
 function formatBR(value) {
@@ -208,13 +212,11 @@ function formatBR(value) {
 function getItensCobrados() {
   const itens = [];
 
-  // Mão de Obra
   if (document.getElementById('incluirMaoObra').checked) {
     const valor = parseFloat(document.getElementById('valorMaoObra').value) || 0;
     if (valor > 0) itens.push({ nome: "Mão de Obra", valor });
   }
 
-  // Serviços selecionados
   Object.keys(VALORES_PADRAO.servicos).forEach(nome => {
     const checkbox = document.getElementById(`check-${nome.replace(/\s+/g, '-')}`);
     const input = document.querySelector(`input[data-servico="${nome}"]`);
@@ -224,7 +226,6 @@ function getItensCobrados() {
     }
   });
 
-  // Peças (com lucro de 25%)
   document.querySelectorAll('input.peca').forEach(input => {
     const valor = parseFloat(input.value || 0);
     if (valor > 0) {
@@ -293,47 +294,79 @@ function salvarOrcamento() {
     observacoes
   };
 
-  const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
-  historico.unshift(orcamento);
-  localStorage.setItem('orcamentos', JSON.stringify(historico));
-
-  alert('Orçamento salvo com sucesso!');
+  try {
+    const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+    historico.unshift(orcamento);
+    localStorage.setItem('orcamentos', JSON.stringify(historico));
+    alert('Orçamento salvo com sucesso!');
+  } catch (e) {
+    alert('Erro ao salvar orçamento. Tente novamente.');
+    console.error(e);
+  }
 }
 
 function carregarServicos() {
   const valores = carregarValoresSalvos();
   const container = document.getElementById('servicosContainer');
-  container.innerHTML = '';
+  
+  // Limpa e mostra carregando
+  container.innerHTML = '<p style="color:#666; font-style:italic;">Preparando serviços...</p>';
 
-  Object.entries(valores.servicos).forEach(([nome, valor]) => {
-    const idCheck = `check-${nome.replace(/\s+/g, '-')}`;
-    const div = document.createElement('div');
-    div.className = 'servico-item';
-    div.innerHTML = `
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;">
-        <input type="checkbox" id="${idCheck}">
-        ${nome}
-      </label>
-      <input type="number" min="0" step="0.01" value="${valor}" data-servico="${nome}" class="valor-servico-input">
-    `;
-    container.appendChild(div);
-  });
+  // Aguarda um frame para atualizar a UI
+  setTimeout(() => {
+    container.innerHTML = '';
+    let algumAdicionado = false;
 
-  // Atualiza valores ao editar
-  document.querySelectorAll('.valor-servico-input').forEach(input => {
-    input.addEventListener('input', () => {
-      recalcular();
-      salvarValoresAtuais(); // ← salva automaticamente ao digitar
+    Object.entries(valores.servicos).forEach(([nome, valor]) => {
+      // Garante que o nome esteja na lista padrão (evita lixo no localStorage)
+      if (VALORES_PADRAO.servicos.hasOwnProperty(nome)) {
+        const idCheck = `check-${nome.replace(/\s+/g, '-')}`;
+        const div = document.createElement('div');
+        div.className = 'servico-item';
+        div.innerHTML = `
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;">
+            <input type="checkbox" id="${idCheck}">
+            ${nome}
+          </label>
+          <input type="number" min="0" step="0.01" value="${parseFloat(valor) || 0}" data-servico="${nome}" class="valor-servico-input">
+        `;
+        container.appendChild(div);
+        algumAdicionado = true;
+      }
     });
-  });
 
-  // Atualiza ao marcar/desmarcar
-  document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(cb => {
-    cb.addEventListener('change', recalcular);
-  });
+    if (!algumAdicionado) {
+      // Fallback: carrega do padrão se nada foi adicionado
+      Object.entries(VALORES_PADRAO.servicos).forEach(([nome, valor]) => {
+        const idCheck = `check-${nome.replace(/\s+/g, '-')}`;
+        const div = document.createElement('div');
+        div.className = 'servico-item';
+        div.innerHTML = `
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;">
+            <input type="checkbox" id="${idCheck}">
+            ${nome}
+          </label>
+          <input type="number" min="0" step="0.01" value="${valor}" data-servico="${nome}" class="valor-servico-input">
+        `;
+        container.appendChild(div);
+      });
+    }
 
-  // Atualiza mão de obra
-  document.getElementById('valorMaoObra').value = valores.maoObra;
+    // Adiciona listeners
+    document.querySelectorAll('.valor-servico-input').forEach(input => {
+      input.addEventListener('input', () => {
+        recalcular();
+        salvarValoresAtuais();
+      });
+    });
+
+    document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', recalcular);
+    });
+
+    document.getElementById('valorMaoObra').value = valores.maoObra;
+    recalcular();
+  }, 10);
 }
 
 function attachListeners() {
@@ -350,7 +383,6 @@ function attachListeners() {
 document.addEventListener('DOMContentLoaded', () => {
   carregarServicos();
   attachListeners();
-  recalcular();
 });
 
 window.addEventListener('keydown', function(e) {
