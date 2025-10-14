@@ -62,7 +62,7 @@
     .servico-item input[type="number"] { flex: 1; }
     @media(max-width:700px){ .two-cols{flex-direction:column} }
 
-    /* Estilos de Impressão — CORRIGIDO */
+    /* Estilos de Impressão — CORRIGIDO PARA NÃO MOSTRAR BOTÕES NO PDF */
     @media print {
       body { 
         margin: 0; 
@@ -71,7 +71,7 @@
         font-size: 10pt; 
         background: white !important;
       }
-      /* Esconde TUDO exceto o resumo final e o cabeçalho de impressão */
+      /* Esconde tudo exceto o resumo final e cabeçalho */
       body > *:not(.resumo-final):not(.cabecalho-print) {
         display: none !important;
       }
@@ -81,6 +81,13 @@
         background: none; 
         display: block !important; 
         width: 100%;
+      }
+      /* Esconde botões, footer e qualquer elemento de interface DENTRO do resumo-final */
+      .resumo-final .btn,
+      .resumo-final .ocultar-print,
+      .resumo-final footer,
+      .resumo-final > div[style*="margin-top:12px"] {
+        display: none !important;
       }
       .cabecalho-print {
         display: block !important;
@@ -103,7 +110,6 @@
         padding: 4px 8px; 
       }
       .lucro-incluso { display: none !important; }
-      /* Garantia e observações */
       .termo-garantia-print,
       #observacoesPrint {
         display: block !important;
@@ -244,6 +250,7 @@
       </p>
     </div>
 
+    <!-- Botões e dica — serão ocultos no PDF pelo CSS -->
     <div style="margin-top:12px">
       <button class="btn" onclick="recalcular()">Calcular</button>
       <button class="btn secondary" onclick="salvarOrcamento()">Salvar Orçamento</button>
