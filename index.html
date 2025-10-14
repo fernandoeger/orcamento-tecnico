@@ -47,6 +47,8 @@
     .btn{display:inline-block;padding:8px 12px;margin-top:10px;border-radius:6px;border:0;background:#0b76ef;color:white;cursor:pointer}
     .btn.secondary{background:#6c757d}
     .btn.history{background:#28a745}
+    .btn.danger{background:#dc3545}
+    .btn.export{background:#17a2b8}
     .small{font-size:0.9rem;color:#555}
     footer{margin-top:18px;font-size:0.85rem;color:#444;border-top:1px dashed #ddd;padding-top:12px}
     .tabela-cobranca{margin-top:20px; border-top: 1px solid #ddd; padding-top: 10px;}
@@ -62,9 +64,17 @@
 
     /* Estilos de Impressão */
     @media print {
-      body { margin: 0; padding: 0; max-width: none; font-size: 10pt; }
-      .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
-      .resumo-final { border: none; padding: 0; background: none; margin-top: 20px; }
+      body { margin: 0; padding: 20px; max-width: none; font-size: 10pt; }
+      .ocultar-print, .btn, footer, #outrosDesc { display: none !important; }
+      .resumo-final { border: none; padding: 0; background: none; }
+      .cabecalho-print {
+        text-align: center;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 10px;
+      }
+      .cabecalho-print h1 { margin: 0; font-size: 1.4em; }
+      .cabecalho-print p { margin: 4px 0; color: #333; }
       .tabela-cobranca table, .resumo-final table { border: 1px solid #333; }
       .tabela-cobranca th, .tabela-cobranca td, .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
       .lucro-incluso { display: none !important; }
@@ -91,6 +101,7 @@
     #modalHistorico ul { list-style: none; padding: 0; }
     #modalHistorico li { padding: 10px 0; border-bottom: 1px solid #eee; }
     #modalHistorico .close { float: right; cursor: pointer; font-weight: bold; }
+    #modalHistorico .modal-actions { margin-top: 15px; text-align: right; }
   </style>
 </head>
 <body>
@@ -115,7 +126,7 @@
   <div class="section">
     <h3>Serviços (selecione os desejados)</h3>
     <div id="servicosContainer">
-      <!-- Será preenchido por JS com checkboxes + inputs -->
+      <!-- Será preenchido por JS -->
     </div>
   </div>
 
@@ -150,6 +161,9 @@
   </div>
 
   <div class="section resumo-final">
+    <!-- Cabeçalho para impressão (só aparece no PDF) -->
+    <div class="cabecalho-print ocultar-print" id="cabecalhoPrint"></div>
+
     <div class="tabela-cobranca">
         <h3>Itens Orçados</h3>
         <table id="cobrancaTable">
@@ -197,17 +211,20 @@
       <h2>Histórico de Orçamentos</h2>
       <ul id="listaHistorico"></ul>
       <p style="font-size:0.9em; color:#666;">Clique em um orçamento para carregá-lo.</p>
+      
+      <div class="modal-actions">
+        <button class="btn export" onclick="exportarHistorico()">Exportar (.json)</button>
+        <button class="btn danger" onclick="limparHistorico()">Limpar Histórico</button>
+      </div>
     </div>
   </div>
 
 <script>
 // Preços sugeridos para serviços
 const PRECOS_SUGERIDOS = {
-  "Limpeza": 50,
-  "Formatação": 80,
-  "Instalação de Windows": 100,
-  "Backup de dados": 60,
-  "Troca de pasta térmica": 70,
+  "Limpeza interna e troca de pasta térmica": 100,
+  "Formatação": 60,
+  "formatação + Backup": 100,
   "Reballing": 250,
   "Atualização de BIOS": 40,
   "Diagnóstico": 30,
@@ -225,7 +242,6 @@ function sumValues(selector){
   return Array.from(nodes).map(i=>parseFloat(i.value||0)).reduce((a,b)=>a+b,0);
 }
 
-// Renderiza os checkboxes de serviços com base nos preços sugeridos
 function renderizarServicos() {
   const container = document.getElementById('servicosContainer');
   container.innerHTML = '';
@@ -233,14 +249,13 @@ function renderizarServicos() {
     const div = document.createElement('div');
     div.className = 'servico-item';
     div.innerHTML = `
-      <input type="checkbox" id="chk_${servico}" data-item="${servico}" />
-      <label for="chk_${servico}">${servico}</label>
+      <input type="checkbox" id="chk_${servico.replace(/\s+/g, '_')}" data-item="${servico}" />
+      <label for="chk_${servico.replace(/\s+/g, '_')}">${servico}</label>
       <input type="number" class="valor servico" data-item="${servico}" min="0" step="0.01" value="${preco}" disabled />
     `;
     container.appendChild(div);
   }
 
-  // Adicionar listeners aos checkboxes
   document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(cb => {
     cb.addEventListener('change', function() {
       const input = this.closest('.servico-item').querySelector('input[type="number"]');
@@ -250,7 +265,6 @@ function renderizarServicos() {
     });
   });
 
-  // Adicionar listeners aos inputs de valor (caso o usuário edite)
   document.querySelectorAll('#servicosContainer input[type="number"]').forEach(input => {
     input.addEventListener('input', recalcular);
   });
@@ -259,14 +273,12 @@ function renderizarServicos() {
 function getItensCobrados(){
     const itens = [];
 
-    // Mão de Obra
     const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
     const valorMaoObra = parseFloat(document.getElementById('valorMaoObra').value || 0);
     if (incluirMaoObra && valorMaoObra > 0) {
         itens.push({ nome: "Mão de Obra", valor: valorMaoObra });
     }
 
-    // Serviços selecionados
     document.querySelectorAll('#servicosContainer .servico-item').forEach(itemDiv => {
         const checkbox = itemDiv.querySelector('input[type="checkbox"]');
         const input = itemDiv.querySelector('input[type="number"]');
@@ -279,7 +291,6 @@ function getItensCobrados(){
         }
     });
 
-    // Peças com lucro
     document.querySelectorAll('input.peca').forEach(input => {
         const valor = parseFloat(input.value || 0);
         if (valor > 0) {
@@ -299,12 +310,10 @@ function getItensCobrados(){
 }
 
 function recalcular(){
-  // Mão de Obra
   const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
   const valorMaoObra = incluirMaoObra ? parseFloat(document.getElementById('valorMaoObra').value || 0) : 0;
   document.getElementById('valorMaoObra').disabled = !incluirMaoObra;
 
-  // Serviços: só somar os marcados
   let totalServicos = 0;
   document.querySelectorAll('#servicosContainer .servico-item').forEach(itemDiv => {
     const checkbox = itemDiv.querySelector('input[type="checkbox"]');
@@ -314,13 +323,10 @@ function recalcular(){
     }
   });
 
-  // Peças com lucro
   const totalPecas = sumValues('input.peca') * 1.25;
-
   const custo = totalServicos + valorMaoObra + totalPecas;
   document.getElementById('custo').innerText = 'R$ ' + formatBR(custo);
 
-  // Atualiza tabela de cobrança
   const tabelaCorpo = document.querySelector('#cobrancaTable tbody');
   tabelaCorpo.innerHTML = '';
   const itens = getItensCobrados();
@@ -339,24 +345,28 @@ function recalcular(){
       row.cells[0].style.textAlign = 'center';
   }
 
-  // Observações
   const obsText = document.getElementById('observacoes').value.trim();
   document.getElementById('obsContent').innerText = obsText;
   document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
+
+  // Atualiza cabeçalho do PDF
+  const dataAtual = new Date().toLocaleString('pt-BR');
+  const cliente = document.getElementById('cliente').value.trim() || 'Não informado';
+  const aparelho = document.getElementById('descricaoAparelho').value.trim() || 'Não informado';
+  document.getElementById('cabecalhoPrint').innerHTML = `
+    <h1>Orçamento Técnico</h1>
+    <p><strong>Cliente:</strong> ${cliente}</p>
+    <p><strong>Aparelho:</strong> ${aparelho}</p>
+    <p><strong>Data:</strong> ${dataAtual}</p>
+  `;
 }
 
 function attachListeners(){
-  // Peças, outros, observações
   document.querySelectorAll('input.peca, #outrosDesc, #observacoes').forEach(el => {
     el.addEventListener('input', recalcular);
   });
-
-  // Mão de Obra
   document.getElementById('incluirMaoObra').addEventListener('change', recalcular);
   document.getElementById('valorMaoObra').addEventListener('input', recalcular);
-
-  // Cliente e aparelho (não recalculam, mas podem ser salvos)
-  // Nada a fazer aqui além de salvar depois
 }
 
 // =============== SALVAR E HISTÓRICO ===============
@@ -387,11 +397,11 @@ function salvarOrcamento() {
   };
 
   let historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
-  historico.unshift(orcamento); // adiciona no início
+  historico.unshift(orcamento);
   localStorage.setItem('orcamentos', JSON.stringify(historico));
 
   alert('Orçamento salvo com sucesso!');
-  recalcular(); // atualiza total
+  recalcular();
 }
 
 function carregarOrcamento(orc) {
@@ -403,7 +413,6 @@ function carregarOrcamento(orc) {
   document.getElementById('valorMaoObra').value = orc.valorMaoObra || 120;
   document.getElementById('valorMaoObra').disabled = !maoObraCheck.checked;
 
-  // Serviços
   orc.servicos.forEach(serv => {
     const checkbox = document.querySelector(`#servicosContainer input[data-item="${serv.nome}"][type="checkbox"]`);
     const input = document.querySelector(`#servicosContainer input[data-item="${serv.nome}"][type="number"]`);
@@ -414,7 +423,6 @@ function carregarOrcamento(orc) {
     }
   });
 
-  // Peças
   orc.pecas.forEach(peca => {
     const input = document.querySelector(`input.peca[data-item="${peca.nome}"]`);
     if (input) input.value = peca.valor;
@@ -452,6 +460,37 @@ function mostrarHistorico() {
 
 function fecharHistorico() {
   document.getElementById('modalHistorico').style.display = 'none';
+}
+
+// =============== NOVAS FUNÇÕES ===============
+
+function exportarHistorico() {
+  const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+  if (historico.length === 0) {
+    alert('Nenhum orçamento para exportar.');
+    return;
+  }
+
+  const dataStr = JSON.stringify(historico, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `historico_orcamentos_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function limparHistorico() {
+  if (confirm('Tem certeza que deseja apagar todo o histórico de orçamentos? Esta ação não pode ser desfeita.')) {
+    localStorage.removeItem('orcamentos');
+    alert('Histórico limpo com sucesso!');
+    fecharHistorico();
+    // Atualiza lista se ainda aberta
+    mostrarHistorico();
+  }
 }
 
 // =============== INICIALIZAÇÃO ===============
