@@ -16,6 +16,7 @@
   <link rel="apple-touch-icon" href="icon-192.png">
 
   <style>
+    /* Seus estilos existentes */
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:980px;margin:18px auto;padding:12px}
     h1{margin-bottom:6px}
     label{display:block;margin-top:10px;font-weight:600}
@@ -38,6 +39,7 @@
     .checkbox-container input[type="checkbox"] { width: auto; margin-top: 0; }
     @media(max-width:700px){ .two-cols{flex-direction:column} }
 
+    /* Estilos de Impressão */
     @media print {
       body { margin: 0; padding: 0; max-width: none; font-size: 10pt; }
       .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
@@ -47,17 +49,15 @@
       .lucro-incluso { display: none !important; }
     }
 
+    /* Estilo para checkbox de serviço */
     .servico-item {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 12px;
       padding: 6px 0;
       border-bottom: 1px solid #f0f0f0;
     }
     .servico-item:last-child { border-bottom: none; }
-    .servico-item input[type="number"] {
-      width: 120px;
-    }
   </style>
 </head>
 <body>
@@ -69,20 +69,24 @@
   <label>Descrição do aparelho</label>
   <input id="descricaoAparelho" type="text" placeholder="Ex: Notebook Dell Inspiron" />
 
+  <!-- Mão de Obra -->
   <div class="section">
     <h3>Mão de Obra</h3>
     <div class="checkbox-container">
       <input type="checkbox" id="incluirMaoObra" />
-      <label for="incluirMaoObra">Incluir Mão de Obra</label>
+      <label for="incluirMaoObra">Incluir Mão de Obra (R$ 120,00)</label>
     </div>
-    <input id="valorMaoObra" type="number" min="0" step="0.01" value="120" style="margin-top:8px;" />
   </div>
 
+  <!-- Serviços com checkboxes e valores fixos -->
   <div class="section">
-    <h3>Serviços (marque os desejados e edite os valores)</h3>
-    <div id="servicosContainer"></div>
+    <h3>Serviços (selecione os desejados)</h3>
+    <div id="servicosContainer">
+      <!-- Será preenchido por JS -->
+    </div>
   </div>
 
+  <!-- Peças (mantém editáveis) -->
   <div class="section">
     <h3>Peças (valores editáveis)</h3>
     <table id="pecasTable">
@@ -110,7 +114,7 @@
 
   <div class="section ocultar-print">
     <label>Observações / Condições de Serviço</label>
-    <textarea id="observacoes" rows="4">Garantia de 90 dias para o serviço executado. Peças com garantia do fabricante. Não cobrimos danos por mau uso, água, quedas ou interferência de terceiros.</textarea>
+    <textarea id="observacoes" rows="3" placeholder="Ex: Garantia de 90 dias; Prazo de 3 dias úteis."></textarea>
   </div>
 
   <div class="section resumo-final">
@@ -150,236 +154,161 @@
   </div>
 
 <script>
-// Valores padrão
-const SERVICOS = [
-  { nome: "Limpeza", valor: 50 },
-  { nome: "Formatação", valor: 80 },
-  { nome: "Instalação de Windows", valor: 70 },
-  { nome: "Backup de dados", valor: 40 },
-  { nome: "Troca de pasta térmica", valor: 60 },
-  { nome: "Reballing", valor: 250 },
-  { nome: "Atualização de BIOS", valor: 30 },
-  { nome: "Diagnóstico", valor: 0 },
-  { nome: "Troca de teclado (mão de obra)", valor: 45 },
-  { nome: "Instalação de drivers", valor: 20 }
-];
-
-// Carrega valores salvos ou usa padrão
-function getValoresSalvos() {
-  try {
-    const salvos = JSON.parse(localStorage.getItem('valores_orcamento') || '{}');
-    const servicos = {};
-    SERVICOS.forEach(s => {
-      const val = salvos.servicos && typeof salvos.servicos[s.nome] === 'number' 
-        ? salvos.servicos[s.nome] 
-        : s.valor;
-      servicos[s.nome] = val;
-    });
-    const maoObra = typeof salvos.maoObra === 'number' ? salvos.maoObra : 120;
-    return { servicos, maoObra };
-  } catch (e) {
-    return { 
-      servicos: SERVICOS.reduce((acc, s) => ({ ...acc, [s.nome]: s.valor }), {}),
-      maoObra: 120
-    };
-  }
-}
-
-// Salva valores atuais
-function salvarValores() {
-  try {
-    const servicos = {};
-    SERVICOS.forEach(s => {
-      const input = document.querySelector(`input[data-servico="${s.nome}"]`);
-      servicos[s.nome] = input ? parseFloat(input.value) || 0 : s.valor;
-    });
-    const maoObra = parseFloat(document.getElementById('valorMaoObra').value) || 120;
-    localStorage.setItem('valores_orcamento', JSON.stringify({ servicos, maoObra }));
-  } catch (e) {
-    console.error('Erro ao salvar valores');
-  }
-}
+// Valores fixos de sugestão para serviços
+const SERVICOS_SUGESTAO = {
+  "Limpeza": 50,
+  "Formatação": 80,
+  "Instalação de Windows": 70,
+  "Backup de dados": 40,
+  "Troca de pasta térmica": 60,
+  "Reballing": 250,
+  "Atualização de BIOS": 30,
+  "Diagnóstico": 0, // Gratuito
+  "Troca de teclado (mão de obra)": 45,
+  "Instalação de drivers": 20
+};
 
 function formatBR(value) {
-  return (parseFloat(value) || 0).toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+  const numericValue = parseFloat(value) || 0;
+  return numericValue.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function sumValues(selector) {
+  const nodes = document.querySelectorAll(selector);
+  return Array.from(nodes).map(i => parseFloat(i.value || 0)).reduce((a, b) => a + b, 0);
+}
+
+function getItensCobrados() {
+  const itens = [];
+
+  // Mão de Obra
+  if (document.getElementById('incluirMaoObra').checked) {
+    itens.push({ nome: "Mão de Obra", valor: 120 });
+  }
+
+  // Serviços selecionados
+  Object.entries(SERVICOS_SUGESTAO).forEach(([nome, valor]) => {
+    const checkbox = document.getElementById(`servico-${nome.replace(/\s+/g, '-')}`);
+    if (checkbox && checkbox.checked) {
+      itens.push({ nome, valor });
+    }
   });
+
+  // Peças (com lucro de 25%)
+  document.querySelectorAll('input.peca').forEach(input => {
+    const valor = parseFloat(input.value || 0);
+    if (valor > 0) {
+      const item = input.getAttribute('data-item');
+      let nome = item;
+      const valorFinal = valor * 1.25;
+      if (item === 'Outros' && document.getElementById('outrosDesc').value.trim() !== "") {
+        nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
+      }
+      itens.push({ nome, valor: valorFinal });
+    }
+  });
+
+  return itens;
 }
 
 function recalcular() {
-  // Mão de obra
+  const tabelaCorpo = document.querySelector('#cobrancaTable tbody');
+  tabelaCorpo.innerHTML = '';
+
+  const itens = getItensCobrados();
   let total = 0;
-  const itens = [];
-  if (document.getElementById('incluirMaoObra').checked) {
-    const v = parseFloat(document.getElementById('valorMaoObra').value) || 0;
-    if (v > 0) {
-      itens.push({ nome: "Mão de Obra", valor: v });
-      total += v;
-    }
-  }
 
-  // Serviços
-  SERVICOS.forEach(s => {
-    const chk = document.getElementById(`chk-${s.nome}`);
-    const input = document.querySelector(`input[data-servico="${s.nome}"]`);
-    if (chk && chk.checked && input) {
-      const v = parseFloat(input.value) || 0;
-      if (v > 0) {
-        itens.push({ nome: s.nome, valor: v });
-        total += v;
-      }
-    }
-  });
-
-  // Peças
-  document.querySelectorAll('input.peca').forEach(el => {
-    const v = parseFloat(el.value) || 0;
-    if (v > 0) {
-      const item = el.getAttribute('data-item');
-      let nome = item;
-      const valorFinal = v * 1.25;
-      if (item === 'Outros' && document.getElementById('outrosDesc').value.trim()) {
-        nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
-      }
-      itens.push({ nome, valor: valorFinal });
-      total += valorFinal;
-    }
-  });
-
-  // Atualiza tabela
-  const tbody = document.querySelector('#cobrancaTable tbody');
-  tbody.innerHTML = '';
-  if (itens.length === 0) {
-    const row = tbody.insertRow();
-    row.innerHTML = '<td colspan="2" style="text-align:center;">Nenhum item selecionado.</td>';
-  } else {
-    itens.forEach(i => {
-      const row = tbody.insertRow();
-      row.insertCell().textContent = i.nome;
-      const cell = row.insertCell();
-      cell.className = 'right';
-      cell.textContent = 'R$ ' + formatBR(i.valor);
+  if (itens.length > 0) {
+    itens.forEach(item => {
+      total += item.valor;
+      const row = tabelaCorpo.insertRow();
+      row.insertCell().innerText = item.nome;
+      const valorCell = row.insertCell();
+      valorCell.className = 'right';
+      valorCell.innerText = 'R$ ' + formatBR(item.valor);
     });
+  } else {
+    const row = tabelaCorpo.insertRow();
+    row.insertCell().innerText = 'Nenhum item selecionado.';
+    row.insertCell().colSpan = 2;
+    row.cells[0].style.textAlign = 'center';
   }
 
-  document.getElementById('custo').textContent = 'R$ ' + formatBR(total);
+  document.getElementById('custo').innerText = 'R$ ' + formatBR(total);
 
   // Observações
-  const obs = document.getElementById('observacoes').value.trim();
-  document.getElementById('obsContent').textContent = obs;
-  document.getElementById('observacoesPrint').style.display = obs ? 'block' : 'none';
+  const obsText = document.getElementById('observacoes').value.trim();
+  document.getElementById('obsContent').innerText = obsText;
+  document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
 }
 
 function salvarOrcamento() {
-  const itens = [];
-  if (document.getElementById('incluirMaoObra').checked) {
-    const v = parseFloat(document.getElementById('valorMaoObra').value) || 0;
-    if (v > 0) itens.push({ nome: "Mão de Obra", valor: v });
-  }
-  SERVICOS.forEach(s => {
-    const chk = document.getElementById(`chk-${s.nome}`);
-    const input = document.querySelector(`input[data-servico="${s.nome}"]`);
-    if (chk && chk.checked && input) {
-      const v = parseFloat(input.value) || 0;
-      if (v > 0) itens.push({ nome: s.nome, valor: v });
-    }
-  });
-  document.querySelectorAll('input.peca').forEach(el => {
-    const v = parseFloat(el.value) || 0;
-    if (v > 0) {
-      const item = el.getAttribute('data-item');
-      let nome = item;
-      const valorFinal = v * 1.25;
-      if (item === 'Outros' && document.getElementById('outrosDesc').value.trim()) {
-        nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
-      }
-      itens.push({ nome, valor: valorFinal });
-    }
-  });
+  const cliente = document.getElementById('cliente').value.trim() || 'Cliente não informado';
+  const aparelho = document.getElementById('descricaoAparelho').value.trim() || 'Aparelho não informado';
+  const itens = getItensCobrados();
+  const total = itens.reduce((sum, item) => sum + item.valor, 0);
+  const observacoes = document.getElementById('observacoes').value.trim();
 
   if (itens.length === 0) {
-    alert('Selecione pelo menos um item.');
+    alert('Selecione pelo menos um serviço ou peça antes de salvar.');
     return;
   }
 
-  const orc = {
+  const orcamento = {
     id: Date.now(),
      new Date().toLocaleString('pt-BR'),
-    cliente: document.getElementById('cliente').value.trim() || 'Cliente não informado',
-    aparelho: document.getElementById('descricaoAparelho').value.trim() || 'Aparelho não informado',
+    cliente,
+    aparelho,
     itens,
-    total: itens.reduce((s, i) => s + i.valor, 0),
-    observacoes: document.getElementById('observacoes').value.trim()
+    total,
+    observacoes
   };
 
-  try {
-    const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
-    historico.unshift(orc);
-    localStorage.setItem('orcamentos', JSON.stringify(historico));
-    alert('Orçamento salvo!');
-  } catch (e) {
-    alert('Erro ao salvar.');
-  }
+  // Salvar no localStorage
+  const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+  historico.unshift(orcamento); // Adiciona no início
+  localStorage.setItem('orcamentos', JSON.stringify(historico));
+
+  alert('Orçamento salvo com sucesso!');
 }
 
-// ✅ Carrega serviços de forma 100% confiável
 function carregarServicos() {
-  const { servicos, maoObra } = getValoresSalvos();
   const container = document.getElementById('servicosContainer');
   container.innerHTML = '';
-
-  SERVICOS.forEach(s => {
-    const valorAtual = servicos[s.nome] || s.valor;
-    const idCheck = `chk-${s.nome}`;
+  Object.entries(SERVICOS_SUGESTAO).forEach(([nome, valor]) => {
+    const id = `servico-${nome.replace(/\s+/g, '-')}`;
     const div = document.createElement('div');
     div.className = 'servico-item';
     div.innerHTML = `
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;">
-        <input type="checkbox" id="${idCheck}">
-        ${s.nome}
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="${id}" data-nome="${nome}" data-valor="${valor}">
+        ${nome}
       </label>
-      <input type="number" min="0" step="0.01" value="${valorAtual}" data-servico="${s.nome}" class="valor-servico">
+      <span>R$ ${formatBR(valor)}</span>
     `;
     container.appendChild(div);
   });
 
-  // Mão de obra
-  document.getElementById('valorMaoObra').value = maoObra;
-
-  // Listeners
-  document.querySelectorAll('.valor-servico').forEach(input => {
-    input.addEventListener('input', () => {
-      recalcular();
-      salvarValores();
-    });
+  // Adicionar listeners
+  document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', recalcular);
   });
-
-  document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(chk => {
-    chk.addEventListener('change', recalcular);
-  });
-
-  document.getElementById('valorMaoObra').addEventListener('input', () => {
-    recalcular();
-    salvarValores();
-  });
-
-  document.getElementById('incluirMaoObra').addEventListener('change', recalcular);
-
-  recalcular();
 }
 
-// Inicializa
+function attachListeners() {
+  document.querySelectorAll('input.peca, #outrosDesc, #observacoes, #cliente, #descricaoAparelho').forEach(el => {
+    el.addEventListener('input', recalcular);
+  });
+  document.getElementById('incluirMaoObra').addEventListener('change', recalcular);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   carregarServicos();
-
-  // Peças e outros campos
-  document.querySelectorAll('input.peca, #outrosDesc, #observacoes, #cliente, #descricaoAparelho')
-    .forEach(el => el.addEventListener('input', recalcular));
+  attachListeners();
+  recalcular();
 });
 
-// Atalho Ctrl+S
-window.addEventListener('keydown', e => {
+window.addEventListener('keydown', function(e) {
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
     e.preventDefault();
     window.print();
