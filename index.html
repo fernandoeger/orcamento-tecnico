@@ -99,7 +99,7 @@
     }
     #modalHistorico h2 { margin-top: 0; }
     #modalHistorico ul { list-style: none; padding: 0; }
-    #modalHistorico li { padding: 10px 0; border-bottom: 1px solid #eee; }
+    #modalHistorico li { padding: 10px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: flex-start; }
     #modalHistorico .close { float: right; cursor: pointer; font-weight: bold; }
     #modalHistorico .modal-actions { margin-top: 15px; text-align: right; }
   </style>
@@ -192,6 +192,15 @@
         <p id="obsContent" style="white-space: pre-wrap; margin-top: 5px;"></p>
     </div>
 
+    <!-- Termo de Garantia (só aparece no PDF) -->
+    <div class="termo-garantia-print" style="margin-top: 15px; font-size: 0.95rem;">
+      <p style="font-weight: bold;">Garantia:</p>
+      <p style="margin-top: 5px; white-space: pre-wrap;">
+        Garantia de 90 dias para o serviço executado. Peças com garantia do fabricante. 
+        Não cobrimos danos por mau uso, água, quedas ou interferência de terceiros.
+      </p>
+    </div>
+
     <div style="margin-top:12px">
       <button class="btn" onclick="recalcular()">Calcular</button>
       <button class="btn secondary" onclick="salvarOrcamento()">Salvar Orçamento</button>
@@ -214,7 +223,6 @@
       
       <div class="modal-actions">
         <button class="btn export" onclick="exportarHistorico()">Exportar (.json)</button>
-        <button class="btn danger" onclick="limparHistorico()">Limpar Histórico</button>
       </div>
     </div>
   </div>
@@ -443,14 +451,41 @@ function mostrarHistorico() {
   if (historico.length === 0) {
     lista.innerHTML = '<li>Nenhum orçamento salvo ainda.</li>';
   } else {
-    historico.forEach(orc => {
+    historico.forEach((orc, index) => {
       const li = document.createElement('li');
-      li.innerHTML = `
+      li.style.display = 'flex';
+      li.style.justifyContent = 'space-between';
+      li.style.alignItems = 'flex-start';
+
+      const info = document.createElement('div');
+      info.style.flex = '1';
+      info.innerHTML = `
         <strong>${orc.cliente || 'Cliente não informado'}</strong> - ${orc.aparelho || 'Sem descrição'}<br>
         <small>${orc.data}</small>
       `;
-      li.style.cursor = 'pointer';
-      li.onclick = () => carregarOrcamento(orc);
+      info.style.cursor = 'pointer';
+      info.onclick = () => carregarOrcamento(orc);
+
+      const btnExcluir = document.createElement('button');
+      btnExcluir.className = 'btn danger';
+      btnExcluir.style.padding = '4px 8px';
+      btnExcluir.style.fontSize = '0.8rem';
+      btnExcluir.style.marginLeft = '10px';
+      btnExcluir.textContent = '🗑️';
+      btnExcluir.title = 'Excluir este orçamento';
+      btnExcluir.onclick = (e) => {
+        e.stopPropagation(); // evita carregar ao clicar no botão
+        if (confirm(`Excluir orçamento de "${orc.cliente || 'Cliente não informado'}" (${orc.data})?`)) {
+          let historicoAtual = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+          historicoAtual.splice(index, 1);
+          localStorage.setItem('orcamentos', JSON.stringify(historicoAtual));
+          mostrarHistorico(); // atualiza a lista
+          alert('Orçamento excluído com sucesso!');
+        }
+      };
+
+      li.appendChild(info);
+      li.appendChild(btnExcluir);
       lista.appendChild(li);
     });
   }
@@ -481,16 +516,6 @@ function exportarHistorico() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-}
-
-function limparHistorico() {
-  if (confirm('Tem certeza que deseja apagar todo o histórico de orçamentos? Esta ação não pode ser desfeita.')) {
-    localStorage.removeItem('orcamentos');
-    alert('Histórico limpo com sucesso!');
-    fecharHistorico();
-    // Atualiza lista se ainda aberta
-    mostrarHistorico();
-  }
 }
 
 // =============== INICIALIZAÇÃO ===============
