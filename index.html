@@ -49,15 +49,18 @@
       .lucro-incluso { display: none !important; }
     }
 
-    /* Estilo para checkbox de serviço */
+    /* Estilo para linha de serviço editável */
     .servico-item {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      gap: 12px;
       padding: 6px 0;
       border-bottom: 1px solid #f0f0f0;
     }
     .servico-item:last-child { border-bottom: none; }
+    .servico-item input[type="number"] {
+      width: 120px;
+    }
   </style>
 </head>
 <body>
@@ -74,16 +77,15 @@
     <h3>Mão de Obra</h3>
     <div class="checkbox-container">
       <input type="checkbox" id="incluirMaoObra" />
-      <label for="incluirMaoObra">Incluir Mão de Obra (R$ 120,00)</label>
+      <label for="incluirMaoObra">Incluir Mão de Obra</label>
     </div>
+    <input id="valorMaoObra" type="number" min="0" step="0.01" value="120" style="margin-top:8px;" />
   </div>
 
-  <!-- Serviços com checkboxes e valores fixos -->
+  <!-- Serviços: checkboxes + valores editáveis -->
   <div class="section">
-    <h3>Serviços (selecione os desejados)</h3>
-    <div id="servicosContainer">
-      <!-- Será preenchido por JS -->
-    </div>
+    <h3>Serviços (marque os desejados e edite os valores)</h3>
+    <div id="servicosContainer"></div>
   </div>
 
   <!-- Peças (mantém editáveis) -->
@@ -154,28 +156,53 @@
   </div>
 
 <script>
-// Valores fixos de sugestão para serviços
-const SERVICOS_SUGESTAO = {
-  "Limpeza": 50,
-  "Formatação": 80,
-  "Instalação de Windows": 70,
-  "Backup de dados": 40,
-  "Troca de pasta térmica": 60,
-  "Reballing": 250,
-  "Atualização de BIOS": 30,
-  "Diagnóstico": 0, // Gratuito
-  "Troca de teclado (mão de obra)": 45,
-  "Instalação de drivers": 20
+// Valores padrão iniciais (serão substituídos pelos salvos)
+const VALORES_PADRAO = {
+  servicos: {
+    "Limpeza": 50,
+    "Formatação": 80,
+    "Instalação de Windows": 70,
+    "Backup de dados": 40,
+    "Troca de pasta térmica": 60,
+    "Reballing": 250,
+    "Atualização de BIOS": 30,
+    "Diagnóstico": 0,
+    "Troca de teclado (mão de obra)": 45,
+    "Instalação de drivers": 20
+  },
+  maoObra: 120
 };
+
+// Carrega valores salvos ou usa padrão
+function carregarValoresSalvos() {
+  const salvos = JSON.parse(localStorage.getItem('valores_orcamento') || '{}');
+  return {
+    servicos: { ...VALORES_PADRAO.servicos, ...salvos.servicos },
+    maoObra: salvos.maoObra !== undefined ? salvos.maoObra : VALORES_PADRAO.maoObra
+  };
+}
+
+// Salva valores atuais no localStorage
+function salvarValoresAtuais() {
+  const valores = {
+    servicos: {},
+    maoObra: parseFloat(document.getElementById('valorMaoObra').value) || 0
+  };
+
+  // Coleta valores dos serviços
+  Object.keys(VALORES_PADRAO.servicos).forEach(nome => {
+    const input = document.querySelector(`input[data-servico="${nome}"]`);
+    if (input) {
+      valores.servicos[nome] = parseFloat(input.value) || 0;
+    }
+  });
+
+  localStorage.setItem('valores_orcamento', JSON.stringify(valores));
+}
 
 function formatBR(value) {
   const numericValue = parseFloat(value) || 0;
   return numericValue.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
-}
-
-function sumValues(selector) {
-  const nodes = document.querySelectorAll(selector);
-  return Array.from(nodes).map(i => parseFloat(i.value || 0)).reduce((a, b) => a + b, 0);
 }
 
 function getItensCobrados() {
@@ -183,14 +210,17 @@ function getItensCobrados() {
 
   // Mão de Obra
   if (document.getElementById('incluirMaoObra').checked) {
-    itens.push({ nome: "Mão de Obra", valor: 120 });
+    const valor = parseFloat(document.getElementById('valorMaoObra').value) || 0;
+    if (valor > 0) itens.push({ nome: "Mão de Obra", valor });
   }
 
   // Serviços selecionados
-  Object.entries(SERVICOS_SUGESTAO).forEach(([nome, valor]) => {
-    const checkbox = document.getElementById(`servico-${nome.replace(/\s+/g, '-')}`);
-    if (checkbox && checkbox.checked) {
-      itens.push({ nome, valor });
+  Object.keys(VALORES_PADRAO.servicos).forEach(nome => {
+    const checkbox = document.getElementById(`check-${nome.replace(/\s+/g, '-')}`);
+    const input = document.querySelector(`input[data-servico="${nome}"]`);
+    if (checkbox && checkbox.checked && input) {
+      const valor = parseFloat(input.value) || 0;
+      if (valor > 0) itens.push({ nome, valor });
     }
   });
 
@@ -236,7 +266,6 @@ function recalcular() {
 
   document.getElementById('custo').innerText = 'R$ ' + formatBR(total);
 
-  // Observações
   const obsText = document.getElementById('observacoes').value.trim();
   document.getElementById('obsContent').innerText = obsText;
   document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
@@ -256,7 +285,7 @@ function salvarOrcamento() {
 
   const orcamento = {
     id: Date.now(),
-    data: new Date().toLocaleString('pt-BR'),
+     new Date().toLocaleString('pt-BR'),
     cliente,
     aparelho,
     itens,
@@ -264,35 +293,47 @@ function salvarOrcamento() {
     observacoes
   };
 
-  // Salvar no localStorage
   const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
-  historico.unshift(orcamento); // Adiciona no início
+  historico.unshift(orcamento);
   localStorage.setItem('orcamentos', JSON.stringify(historico));
 
   alert('Orçamento salvo com sucesso!');
 }
 
 function carregarServicos() {
+  const valores = carregarValoresSalvos();
   const container = document.getElementById('servicosContainer');
   container.innerHTML = '';
-  Object.entries(SERVICOS_SUGESTAO).forEach(([nome, valor]) => {
-    const id = `servico-${nome.replace(/\s+/g, '-')}`;
+
+  Object.entries(valores.servicos).forEach(([nome, valor]) => {
+    const idCheck = `check-${nome.replace(/\s+/g, '-')}`;
     const div = document.createElement('div');
     div.className = 'servico-item';
     div.innerHTML = `
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-        <input type="checkbox" id="${id}" data-nome="${nome}" data-valor="${valor}">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;">
+        <input type="checkbox" id="${idCheck}">
         ${nome}
       </label>
-      <span>R$ ${formatBR(valor)}</span>
+      <input type="number" min="0" step="0.01" value="${valor}" data-servico="${nome}" class="valor-servico-input">
     `;
     container.appendChild(div);
   });
 
-  // Adicionar listeners
+  // Atualiza valores ao editar
+  document.querySelectorAll('.valor-servico-input').forEach(input => {
+    input.addEventListener('input', () => {
+      recalcular();
+      salvarValoresAtuais(); // ← salva automaticamente ao digitar
+    });
+  });
+
+  // Atualiza ao marcar/desmarcar
   document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(cb => {
     cb.addEventListener('change', recalcular);
   });
+
+  // Atualiza mão de obra
+  document.getElementById('valorMaoObra').value = valores.maoObra;
 }
 
 function attachListeners() {
@@ -300,6 +341,10 @@ function attachListeners() {
     el.addEventListener('input', recalcular);
   });
   document.getElementById('incluirMaoObra').addEventListener('change', recalcular);
+  document.getElementById('valorMaoObra').addEventListener('input', () => {
+    recalcular();
+    salvarValoresAtuais();
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
