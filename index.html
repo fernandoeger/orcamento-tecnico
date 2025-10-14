@@ -1,43 +1,75 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Orçamento</title>
-<style>
-  /* Estilos Gerais */
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:980px;margin:18px auto;padding:12px}
-  h1{margin-bottom:6px}
-  label{display:block;margin-top:10px;font-weight:600}
-  input[type="text"], input[type="number"], select, textarea{width:100%;padding:8px;margin-top:6px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box}
-  .row{display:flex;gap:8px}
-  .row > *{flex:1}
-  .section{margin-top:14px;padding:12px;border:1px solid #eee;border-radius:8px;background:#fafafa}
-  table{width:100%;border-collapse:collapse;margin-top:8px}
-  th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}
-  .right{text-align:right}
-  .btn{display:inline-block;padding:8px 12px;margin-top:10px;border-radius:6px;border:0;background:#0b76ef;color:white;cursor:pointer}
-  .btn.secondary{background:#6c757d}
-  .small{font-size:0.9rem;color:#555}
-  footer{margin-top:18px;font-size:0.85rem;color:#444;border-top:1px dashed #ddd;padding-top:12px}
-  .tabela-cobranca{margin-top:20px; border-top: 1px solid #ddd; padding-top: 10px;}
-  .tabela-cobranca h3{margin-bottom: 0;}
-  .tabela-cobranca table{border: 1px solid #ccc; border-radius: 4px; margin-bottom: 20px;}
-  .tabela-cobranca th{background-color: #eee;}
-  .checkbox-container { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
-  .checkbox-container input[type="checkbox"] { width: auto; margin-top: 0; }
-  @media(max-width:700px){ .two-cols{flex-direction:column} }
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Orçamento</title>
 
-  /* Estilos de Impressão (Gerar PDF) */
-  @media print {
-    body { margin: 0; padding: 0; max-width: none; font-size: 10pt; }
-    .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
-    .resumo-final { border: none; padding: 0; background: none; margin-top: 20px; }
-    .tabela-cobranca table, .resumo-final table { border: 1px solid #333; }
-    .tabela-cobranca th, .tabela-cobranca td, .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
-    .lucro-incluso { display: none !important; } /* Esconde "com lucro incluso" no PDF */
-  }
-</style>
+  <!-- Meta tags para iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Orçamento Técnico">
+
+  <!-- Ícones para iOS (obrigatório para aparecer na tela inicial) -->
+  <link rel="apple-touch-icon" sizes="180x180" href="icon-192.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="icon-120.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="icon-76.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <!-- Splash Screen para iOS (opcional - usa CSS) -->
+  <style>
+    @media screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) {
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: #0b76ef url('icon-1024.png') center/contain no-repeat;
+        z-index: 9999;
+        animation: fadeOut 1s ease-out forwards;
+      }
+    }
+
+    @keyframes fadeOut {
+      to { opacity: 0; visibility: hidden; }
+    }
+  </style>
+
+  <!-- Seu CSS existente -->
+  <style>
+    /* Estilos Gerais */
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:980px;margin:18px auto;padding:12px}
+    h1{margin-bottom:6px}
+    label{display:block;margin-top:10px;font-weight:600}
+    input[type="text"], input[type="number"], select, textarea{width:100%;padding:8px;margin-top:6px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box}
+    .row{display:flex;gap:8px}
+    .row > *{flex:1}
+    .section{margin-top:14px;padding:12px;border:1px solid #eee;border-radius:8px;background:#fafafa}
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}
+    .right{text-align:right}
+    .btn{display:inline-block;padding:8px 12px;margin-top:10px;border-radius:6px;border:0;background:#0b76ef;color:white;cursor:pointer}
+    .btn.secondary{background:#6c757d}
+    .small{font-size:0.9rem;color:#555}
+    footer{margin-top:18px;font-size:0.85rem;color:#444;border-top:1px dashed #ddd;padding-top:12px}
+    .tabela-cobranca{margin-top:20px; border-top: 1px solid #ddd; padding-top: 10px;}
+    .tabela-cobranca h3{margin-bottom: 0;}
+    .tabela-cobranca table{border: 1px solid #ccc; border-radius: 4px; margin-bottom: 20px;}
+    .tabela-cobranca th{background-color: #eee;}
+    .checkbox-container { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+    .checkbox-container input[type="checkbox"] { width: auto; margin-top: 0; }
+    @media(max-width:700px){ .two-cols{flex-direction:column} }
+
+    /* Estilos de Impressão (Gerar PDF) */
+    @media print {
+      body { margin: 0; padding: 0; max-width: none; font-size: 10pt; }
+      .section:not(.resumo-final), .btn, footer, #outrosDesc, .small, .ocultar-print { display: none !important; }
+      .resumo-final { border: none; padding: 0; background: none; margin-top: 20px; }
+      .tabela-cobranca table, .resumo-final table { border: 1px solid #333; }
+      .tabela-cobranca th, .tabela-cobranca td, .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
+      .lucro-incluso { display: none !important; } /* Esconde "com lucro incluso" no PDF */
+    }
+  </style>
 </head>
 <body>
   <h1>Orçamento</h1>
