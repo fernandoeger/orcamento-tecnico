@@ -62,34 +62,92 @@
     .servico-item input[type="number"] { flex: 1; }
     @media(max-width:700px){ .two-cols{flex-direction:column} }
 
-    /* Estilos de Impressão */
+    /* ✅ CORREÇÃO DO CSS DE IMPRESSÃO */
     @media print {
-      body { margin: 0; padding: 20px; max-width: none; font-size: 10pt; background: white !important; }
-      body > *:not(.resumo-final):not(.cabecalho-print) { display: none !important; }
-      .resumo-final { border: none; padding: 0; background: none; display: block !important; width: 100%; }
-      .resumo-final .btn,
-      .resumo-final .ocultar-print,
-      .resumo-final footer,
-      .resumo-final > div[style*="margin-top:12px"] { display: none !important; }
+      /* Esconde tudo */
+      body * {
+        visibility: hidden;
+      }
+
+      /* Mostra apenas os elementos necessários */
+      .resumo-final,
+      .cabecalho-print,
+      .resumo-final *,
+      .cabecalho-print *,
+      .tabela-cobranca,
+      .tabela-cobranca *,
+      #observacoesPrint,
+      #observacoesPrint *,
+      .termo-garantia-print,
+      .termo-garantia-print * {
+        visibility: visible;
+      }
+
+      /* Posiciona o conteúdo no topo */
+      .resumo-final {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        margin: 0 !important;
+        padding: 20px !important;
+        box-sizing: border-box;
+        background: white !important;
+      }
+
+      /* Estilos de impressão */
+      body {
+        margin: 0;
+        padding: 0;
+        font-size: 10pt;
+        background: white !important;
+      }
+
       .cabecalho-print {
-        display: block !important;
         text-align: center;
         margin-bottom: 20px;
         border-bottom: 2px solid #000;
         padding-bottom: 10px;
         width: 100%;
       }
-      .cabecalho-print h1 { margin: 0; font-size: 1.4em; }
-      .cabecalho-print p { margin: 4px 0; color: #333; }
-      .tabela-cobranca table, .resumo-final table { border: 1px solid #333; width: 100%; margin-top: 10px; }
-      .tabela-cobranca th, .tabela-cobranca td, .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
-      .lucro-incluso { display: none !important; }
+
+      .cabecalho-print h1 {
+        margin: 0;
+        font-size: 1.4em;
+      }
+
+      .cabecalho-print p {
+        margin: 4px 0;
+        color: #333;
+      }
+
+      .tabela-cobranca table,
+      .resumo-final table {
+        border: 1px solid #333;
+        width: 100%;
+        margin-top: 10px;
+        border-collapse: collapse;
+      }
+
+      .tabela-cobranca th,
+      .tabela-cobranca td,
+      .resumo-final th,
+      .resumo-final td {
+        border: 1px solid #333;
+        padding: 4px 8px;
+      }
+
+      .lucro-incluso {
+        display: none !important;
+      }
+
       .termo-garantia-print,
       #observacoesPrint {
         display: block !important;
         margin-top: 15px;
         font-size: 0.95rem;
       }
+
       #observacoesPrint p,
       .termo-garantia-print p {
         margin: 5px 0;
@@ -269,7 +327,6 @@
 
   <!-- Firebase Modular via CDN -->
   <script type="module">
-    // Firebase modular imports
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
       getAuth,
@@ -289,7 +346,6 @@
       deleteDoc
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // Configuração do Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDp_NCTbF7zQ7uykCXIQs5VbWwVrvZ6948",
       authDomain: "orcamento-f0d12.firebaseapp.com",
@@ -302,8 +358,6 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-
-    // --- Lógica do App (mesma do seu código original, ajustada para modular) ---
 
     const PRECOS_SUGERIDOS = {
       "Limpeza interna e troca de pasta térmica": 100,
@@ -458,13 +512,12 @@
       document.getElementById('valorMaoObra').addEventListener('input', recalcular);
     }
 
-    // ========== FUNÇÕES DO FIREBASE MODULAR ==========
+    // ========== FIREBASE ==========
 
     function login() {
       const email = document.getElementById('email').value;
       const senha = document.getElementById('senha').value;
       if (!email || !senha) return alert("Preencha e-mail e senha.");
-      
       signInWithEmailAndPassword(auth, email, senha)
         .then(() => {
           atualizarInterface();
@@ -477,7 +530,6 @@
       const email = document.getElementById('email').value;
       const senha = document.getElementById('senha').value;
       if (!email || !senha) return alert("Preencha e-mail e senha.");
-      
       createUserWithEmailAndPassword(auth, email, senha)
         .then(() => {
           atualizarInterface();
@@ -521,7 +573,7 @@
 
       const orcamento = {
         id: Date.now(),
-        data: new Date().toLocaleString('pt-BR'),
+         new Date().toLocaleString('pt-BR'),
         cliente: document.getElementById('cliente').value.trim(),
         aparelho: document.getElementById('descricaoAparelho').value.trim(),
         maoObraIncluida: document.getElementById('incluirMaoObra').checked,
@@ -702,7 +754,7 @@
       }
     });
 
-    // Tornar funções globais para onclick inline
+    // Expor funções globais para onclick
     window.login = login;
     window.criarConta = criarConta;
     window.logout = logout;
