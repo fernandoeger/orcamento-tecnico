@@ -17,7 +17,7 @@
   <link rel="apple-touch-icon" sizes="76x76" href="icon-76.png">
   <link rel="apple-touch-icon" href="icon-192.png">
 
-  <!-- Firebase SDKs -->
+  <!-- Firebase SDKs via CDN (modo compatível com HTML puro) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -40,7 +40,7 @@
 
     /* Estilos Gerais */
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:980px;margin:18px auto;padding:12px}
-    h1{margin-bottom:6px}
+    h1,h2{margin-bottom:6px}
     label{display:block;margin-top:10px;font-weight:600}
     input[type="text"], input[type="number"], select, textarea{width:100%;padding:8px;margin-top:6px;border:1px solid #ccc;border-radius:6px;box-sizing:border-box}
     .row{display:flex;gap:8px}
@@ -85,6 +85,7 @@
         width: 100%;
       }
       .cabecalho-print h1 { margin: 0; font-size: 1.4em; }
+      .cabecalho-print h2 { margin: 0 0 10px; font-size: 1.2em; color: #000; }
       .cabecalho-print p { margin: 4px 0; color: #333; }
       .tabela-cobranca table, .resumo-final table { border: 1px solid #333; width: 100%; margin-top: 10px; }
       .tabela-cobranca th, .tabela-cobranca td, .resumo-final th, .resumo-final td { border-color: #333; padding: 4px 8px; }
@@ -144,6 +145,15 @@
       <button class="btn secondary" onclick="criarConta()">Criar conta</button>
     </div>
     <p style="font-size:0.9rem; color:#666;">Use o mesmo e-mail/senha em todos os dispositivos.</p>
+  </div>
+
+  <!-- Tela de Perfil (nome da loja) -->
+  <div id="perfilSection" style="display:none; padding:20px; text-align:center;">
+    <h2>Configurar sua loja</h2>
+    <p>Este nome aparecerá nos orçamentos impressos.</p>
+    <input type="text" id="nomeLoja" placeholder="Ex: Tech Solutions / João Reparos" style="width:80%; max-width:300px; padding:8px; margin:8px 0;" />
+    <br>
+    <button class="btn" onclick="salvarNomeLoja()">Salvar e continuar</button>
   </div>
 
   <!-- App Principal -->
@@ -273,414 +283,460 @@
   </div>
 
 <script>
-// 🔥 🔥 🔥 SUBSTITUA PELO SEU firebaseConfig DO FIREBASE CONSOLE 🔥 🔥 🔥
-const firebaseConfig = {
-  apiKey: "SEU_API_KEY",
-  authDomain: "SEU_PROJETO.firebaseapp.com",
-  projectId: "SEU_PROJETO",
-  storageBucket: "SEU_PROJETO.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef123456789"
-};
-
-// Inicializa o Firebase
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-// Preços sugeridos para serviços
-const PRECOS_SUGERIDOS = {
-  "Limpeza interna e troca de pasta térmica": 100,
-  "Formatação": 60,
-  "formatação + Backup": 100,
-  "Reballing": 250,
-  "Atualização de BIOS": 40,
-  "Diagnóstico": 30,
-  "Troca de teclado (mão de obra)": 90,
-  "Instalação de drivers": 30
-};
-
-function formatBR(value){
-  const numericValue = parseFloat(value) || 0;
-  return numericValue.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
-}
-
-function sumValues(selector){
-  const nodes = document.querySelectorAll(selector);
-  return Array.from(nodes).map(i=>parseFloat(i.value||0)).reduce((a,b)=>a+b,0);
-}
-
-function renderizarServicos() {
-  const container = document.getElementById('servicosContainer');
-  container.innerHTML = '';
-  for (const [servico, preco] of Object.entries(PRECOS_SUGERIDOS)) {
-    const div = document.createElement('div');
-    div.className = 'servico-item';
-    div.innerHTML = `
-      <input type="checkbox" id="chk_${servico.replace(/\s+/g, '_')}" data-item="${servico}" />
-      <label for="chk_${servico.replace(/\s+/g, '_')}">${servico}</label>
-      <input type="number" class="valor servico" data-item="${servico}" min="0" step="0.01" value="${preco}" disabled />
-    `;
-    container.appendChild(div);
-  }
-
-  document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(cb => {
-    cb.addEventListener('change', function() {
-      const input = this.closest('.servico-item').querySelector('input[type="number"]');
-      input.disabled = !this.checked;
-      if (!this.checked) input.value = 0;
-      recalcular();
-    });
-  });
-
-  document.querySelectorAll('#servicosContainer input[type="number"]').forEach(input => {
-    input.addEventListener('input', recalcular);
-  });
-}
-
-function getItensCobrados(){
-    const itens = [];
-
-    const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
-    const valorMaoObra = parseFloat(document.getElementById('valorMaoObra').value || 0);
-    if (incluirMaoObra && valorMaoObra > 0) {
-        itens.push({ nome: "Mão de Obra", valor: valorMaoObra });
-    }
-
-    document.querySelectorAll('#servicosContainer .servico-item').forEach(itemDiv => {
-        const checkbox = itemDiv.querySelector('input[type="checkbox"]');
-        const input = itemDiv.querySelector('input[type="number"]');
-        if (checkbox.checked) {
-            const valor = parseFloat(input.value || 0);
-            if (valor > 0) {
-                const nome = input.getAttribute('data-item');
-                itens.push({ nome, valor });
-            }
-        }
-    });
-
-    document.querySelectorAll('input.peca').forEach(input => {
-        const valor = parseFloat(input.value || 0);
-        if (valor > 0) {
-            const item = input.getAttribute('data-item');
-            let nome = item;
-            const valorFinal = valor * 1.25;
-
-            if (item === 'Outros' && document.getElementById('outrosDesc').value.trim() !== "") {
-                nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
-            }
-
-            itens.push({ nome: nome, valor: valorFinal });
-        }
-    });
-
-    return itens;
-}
-
-function recalcular(){
-  const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
-  const valorMaoObra = incluirMaoObra ? parseFloat(document.getElementById('valorMaoObra').value || 0) : 0;
-  document.getElementById('valorMaoObra').disabled = !incluirMaoObra;
-
-  let totalServicos = 0;
-  document.querySelectorAll('#servicosContainer .servico-item').forEach(itemDiv => {
-    const checkbox = itemDiv.querySelector('input[type="checkbox"]');
-    const input = itemDiv.querySelector('input[type="number"]');
-    if (checkbox.checked) {
-      totalServicos += parseFloat(input.value || 0);
-    }
-  });
-
-  const totalPecas = sumValues('input.peca') * 1.25;
-  const custo = totalServicos + valorMaoObra + totalPecas;
-  document.getElementById('custo').innerText = 'R$ ' + formatBR(custo);
-
-  const tabelaCorpo = document.querySelector('#cobrancaTable tbody');
-  tabelaCorpo.innerHTML = '';
-  const itens = getItensCobrados();
-  if (itens.length > 0) {
-      itens.forEach(item => {
-          const row = tabelaCorpo.insertRow();
-          row.insertCell().innerText = item.nome;
-          const valorCell = row.insertCell();
-          valorCell.className = 'right';
-          valorCell.innerText = 'R$ ' + formatBR(item.valor);
-      });
-  } else {
-      const row = tabelaCorpo.insertRow();
-      row.insertCell().innerText = 'Nenhum item/serviço cobrado.';
-      row.insertCell().colSpan = 2;
-      row.cells[0].style.textAlign = 'center';
-  }
-
-  const obsText = document.getElementById('observacoes').value.trim();
-  document.getElementById('obsContent').innerText = obsText;
-  document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
-
-  const dataAtual = new Date().toLocaleString('pt-BR');
-  const cliente = document.getElementById('cliente').value.trim() || 'Não informado';
-  const aparelho = document.getElementById('descricaoAparelho').value.trim() || 'Não informado';
-  let cabecalhoHTML = `
-    <h1>Orçamento Técnico</h1>
-    <p><strong>Cliente:</strong> ${cliente}</p>
-    <p><strong>Aparelho:</strong> ${aparelho}</p>
-    <p><strong>Data:</strong> ${dataAtual}</p>
-  `;
-  const user = auth.currentUser;
-  if (user) {
-    cabecalhoHTML += `<p><strong>Usuário:</strong> ${user.email}</p>`;
-  }
-  document.getElementById('cabecalhoPrint').innerHTML = cabecalhoHTML;
-}
-
-function attachListeners(){
-  document.querySelectorAll('input.peca, #outrosDesc, #observacoes').forEach(el => {
-    el.addEventListener('input', recalcular);
-  });
-  document.getElementById('incluirMaoObra').addEventListener('change', recalcular);
-  document.getElementById('valorMaoObra').addEventListener('input', recalcular);
-}
-
-// ========== FIREBASE ==========
-function login() {
-  const email = document.getElementById('email').value;
-  const senha = document.getElementById('senha').value;
-  if (!email || !senha) return alert("Preencha e-mail e senha.");
-  
-  auth.signInWithEmailAndPassword(email, senha)
-    .then(() => {
-      atualizarInterface();
-      carregarHistorico();
-    })
-    .catch(err => alert("Erro ao entrar: " + err.message));
-}
-
-function criarConta() {
-  const email = document.getElementById('email').value;
-  const senha = document.getElementById('senha').value;
-  if (!email || !senha) return alert("Preencha e-mail e senha.");
-  
-  auth.createUserWithEmailAndPassword(email, senha)
-    .then(() => {
-      atualizarInterface();
-      alert("Conta criada com sucesso!");
-    })
-    .catch(err => alert("Erro ao criar conta: " + err.message));
-}
-
-function logout() {
-  auth.signOut()
-    .then(() => {
-      atualizarInterface();
-      alert("Você saiu com sucesso.");
-    })
-    .catch(err => alert("Erro ao sair: " + err.message));
-}
-
-function atualizarInterface() {
-  const user = auth.currentUser;
-  if (user) {
-    document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('appSection').style.display = 'block';
-  } else {
-    document.getElementById('loginSection').style.display = 'block';
-    document.getElementById('appSection').style.display = 'none';
-  }
-}
-
-auth.onAuthStateChanged(user => {
-  if (user) {
-    atualizarInterface();
-    carregarHistorico();
-  } else {
-    atualizarInterface();
-  }
-});
-
-function salvarOrcamento() {
-  const user = auth.currentUser;
-  if (!user) return alert("Você precisa estar logado.");
-
-  const orcamento = {
-    id: Date.now(),
-    data: new Date().toLocaleString('pt-BR'),
-    cliente: document.getElementById('cliente').value.trim(),
-    aparelho: document.getElementById('descricaoAparelho').value.trim(),
-    maoObraIncluida: document.getElementById('incluirMaoObra').checked,
-    valorMaoObra: parseFloat(document.getElementById('valorMaoObra').value) || 0,
-    servicos: Array.from(document.querySelectorAll('#servicosContainer .servico-item')).map(div => {
-      const checkbox = div.querySelector('input[type="checkbox"]');
-      const input = div.querySelector('input[type="number"]');
-      return {
-        nome: input.getAttribute('data-item'),
-        selecionado: checkbox.checked,
-        valor: parseFloat(input.value) || 0
-      };
-    }),
-    pecas: Array.from(document.querySelectorAll('input.peca')).map(input => ({
-      nome: input.getAttribute('data-item'),
-      valor: parseFloat(input.value) || 0
-    })),
-    outrosDesc: document.getElementById('outrosDesc').value.trim(),
-    observacoes: document.getElementById('observacoes').value.trim()
+  // ✅ SEU FIREBASE CONFIG — JÁ CORRETO!
+  const firebaseConfig = {
+    apiKey: "AIzaSyDp_NCTbF7zQ7uykCXIQs5VbWwVrvZ6948",
+    authDomain: "orcamento-f0d12.firebaseapp.com",
+    projectId: "orcamento-f0d12",
+    storageBucket: "orcamento-f0d12.firebasestorage.app",
+    messagingSenderId: "644929362209",
+    appId: "1:644929362209:web:323af9e5eda801da998660"
   };
 
-  db.collection("usuarios").doc(user.uid).collection("orcamentos").add(orcamento)
-    .then(() => {
-      alert("Orçamento salvo na nuvem!");
-      carregarHistorico();
-    })
-    .catch(err => alert("Erro ao salvar: " + err.message));
-}
+  // Inicializa o Firebase (modo compatível com HTML puro)
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-function carregarHistorico() {
-  const user = auth.currentUser;
-  if (!user) return;
+  // Preços sugeridos para serviços
+  const PRECOS_SUGERIDOS = {
+    "Limpeza interna e troca de pasta térmica": 100,
+    "Formatação": 60,
+    "formatação + Backup": 100,
+    "Reballing": 250,
+    "Atualização de BIOS": 40,
+    "Diagnóstico": 30,
+    "Troca de teclado (mão de obra)": 90,
+    "Instalação de drivers": 30
+  };
 
-  const lista = document.getElementById('listaHistorico');
-  lista.innerHTML = '<li>Carregando...</li>';
+  function formatBR(value){
+    const numericValue = parseFloat(value) || 0;
+    return numericValue.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
 
-  db.collection("usuarios").doc(user.uid).collection("orcamentos")
-    .orderBy("data", "desc")
-    .get()
-    .then(snapshot => {
-      lista.innerHTML = '';
-      if (snapshot.empty) {
-        lista.innerHTML = '<li>Nenhum orçamento salvo.</li>';
-        return;
-      }
-      snapshot.forEach(doc => {
-        const orc = doc.data();
-        orc.id = doc.id;
-        const li = document.createElement('li');
-        li.style.display = 'flex';
-        li.style.justifyContent = 'space-between';
-        li.style.alignItems = 'flex-start';
+  function sumValues(selector){
+    const nodes = document.querySelectorAll(selector);
+    return Array.from(nodes).map(i=>parseFloat(i.value||0)).reduce((a,b)=>a+b,0);
+  }
 
-        const info = document.createElement('div');
-        info.style.flex = '1';
-        info.innerHTML = `
-          <strong>${orc.cliente || 'Cliente não informado'}</strong> - ${orc.aparelho || 'Sem descrição'}<br>
-          <small>${orc.data}</small>
-        `;
-        info.style.cursor = 'pointer';
-        info.onclick = () => carregarOrcamento(orc);
+  function renderizarServicos() {
+    const container = document.getElementById('servicosContainer');
+    container.innerHTML = '';
+    for (const [servico, preco] of Object.entries(PRECOS_SUGERIDOS)) {
+      const div = document.createElement('div');
+      div.className = 'servico-item';
+      div.innerHTML = `
+        <input type="checkbox" id="chk_${servico.replace(/\s+/g, '_')}" data-item="${servico}" />
+        <label for="chk_${servico.replace(/\s+/g, '_')}">${servico}</label>
+        <input type="number" class="valor servico" data-item="${servico}" min="0" step="0.01" value="${preco}" disabled />
+      `;
+      container.appendChild(div);
+    }
 
-        const btnExcluir = document.createElement('button');
-        btnExcluir.className = 'btn danger';
-        btnExcluir.style.padding = '4px 8px';
-        btnExcluir.style.fontSize = '0.8rem';
-        btnExcluir.style.marginLeft = '10px';
-        btnExcluir.textContent = '🗑️';
-        btnExcluir.title = 'Excluir este orçamento';
-        btnExcluir.onclick = (e) => {
-          e.stopPropagation();
-          if (confirm(`Excluir orçamento de "${orc.cliente || 'Cliente não informado'}" (${orc.data})?`)) {
-            db.collection("usuarios").doc(user.uid).collection("orcamentos").doc(orc.id).delete()
-              .then(() => {
-                alert('Orçamento excluído com sucesso!');
-                carregarHistorico();
-              })
-              .catch(err => alert("Erro ao excluir: " + err.message));
-          }
-        };
-
-        li.appendChild(info);
-        li.appendChild(btnExcluir);
-        lista.appendChild(li);
+    document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', function() {
+        const input = this.closest('.servico-item').querySelector('input[type="number"]');
+        input.disabled = !this.checked;
+        if (!this.checked) input.value = 0;
+        recalcular();
       });
-    })
-    .catch(err => {
-      lista.innerHTML = '<li>Erro ao carregar histórico.</li>';
-      console.error(err);
     });
-}
 
-function carregarOrcamento(orc) {
-  document.getElementById('cliente').value = orc.cliente || '';
-  document.getElementById('descricaoAparelho').value = orc.aparelho || '';
+    document.querySelectorAll('#servicosContainer input[type="number"]').forEach(input => {
+      input.addEventListener('input', recalcular);
+    });
+  }
 
-  const maoObraCheck = document.getElementById('incluirMaoObra');
-  maoObraCheck.checked = orc.maoObraIncluida || false;
-  document.getElementById('valorMaoObra').value = orc.valorMaoObra || 120;
-  document.getElementById('valorMaoObra').disabled = !maoObraCheck.checked;
+  function getItensCobrados(){
+      const itens = [];
 
-  orc.servicos.forEach(serv => {
-    const checkbox = document.querySelector(`#servicosContainer input[data-item="${serv.nome}"][type="checkbox"]`);
-    const input = document.querySelector(`#servicosContainer input[data-item="${serv.nome}"][type="number"]`);
-    if (checkbox && input) {
-      checkbox.checked = serv.selecionado;
-      input.disabled = !serv.selecionado;
-      input.value = serv.valor;
+      const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
+      const valorMaoObra = parseFloat(document.getElementById('valorMaoObra').value || 0);
+      if (incluirMaoObra && valorMaoObra > 0) {
+          itens.push({ nome: "Mão de Obra", valor: valorMaoObra });
+      }
+
+      document.querySelectorAll('#servicosContainer .servico-item').forEach(itemDiv => {
+          const checkbox = itemDiv.querySelector('input[type="checkbox"]');
+          const input = itemDiv.querySelector('input[type="number"]');
+          if (checkbox.checked) {
+              const valor = parseFloat(input.value || 0);
+              if (valor > 0) {
+                  const nome = input.getAttribute('data-item');
+                  itens.push({ nome, valor });
+              }
+          }
+      });
+
+      document.querySelectorAll('input.peca').forEach(input => {
+          const valor = parseFloat(input.value || 0);
+          if (valor > 0) {
+              const item = input.getAttribute('data-item');
+              let nome = item;
+              const valorFinal = valor * 1.25;
+
+              if (item === 'Outros' && document.getElementById('outrosDesc').value.trim() !== "") {
+                  nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
+              }
+
+              itens.push({ nome: nome, valor: valorFinal });
+          }
+      });
+
+      return itens;
+  }
+
+  function recalcular(){
+    const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
+    const valorMaoObra = incluirMaoObra ? parseFloat(document.getElementById('valorMaoObra').value || 0) : 0;
+    document.getElementById('valorMaoObra').disabled = !incluirMaoObra;
+
+    let totalServicos = 0;
+    document.querySelectorAll('#servicosContainer .servico-item').forEach(itemDiv => {
+      const checkbox = itemDiv.querySelector('input[type="checkbox"]');
+      const input = itemDiv.querySelector('input[type="number"]');
+      if (checkbox.checked) {
+        totalServicos += parseFloat(input.value || 0);
+      }
+    });
+
+    const totalPecas = sumValues('input.peca') * 1.25;
+    const custo = totalServicos + valorMaoObra + totalPecas;
+    document.getElementById('custo').innerText = 'R$ ' + formatBR(custo);
+
+    const tabelaCorpo = document.querySelector('#cobrancaTable tbody');
+    tabelaCorpo.innerHTML = '';
+    const itens = getItensCobrados();
+    if (itens.length > 0) {
+        itens.forEach(item => {
+            const row = tabelaCorpo.insertRow();
+            row.insertCell().innerText = item.nome;
+            const valorCell = row.insertCell();
+            valorCell.className = 'right';
+            valorCell.innerText = 'R$ ' + formatBR(item.valor);
+        });
+    } else {
+        const row = tabelaCorpo.insertRow();
+        row.insertCell().innerText = 'Nenhum item/serviço cobrado.';
+        row.insertCell().colSpan = 2;
+        row.cells[0].style.textAlign = 'center';
+    }
+
+    const obsText = document.getElementById('observacoes').value.trim();
+    document.getElementById('obsContent').innerText = obsText;
+    document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
+
+    const dataAtual = new Date().toLocaleString('pt-BR');
+    const cliente = document.getElementById('cliente').value.trim() || 'Não informado';
+    const aparelho = document.getElementById('descricaoAparelho').value.trim() || 'Não informado';
+    let cabecalhoHTML = '';
+
+    // Mostra o nome da loja, se existir
+    if (window.nomeLoja) {
+      cabecalhoHTML += `<h2>${window.nomeLoja}</h2>`;
+    }
+
+    cabecalhoHTML += `
+      <h1>Orçamento Técnico</h1>
+      <p><strong>Cliente:</strong> ${cliente}</p>
+      <p><strong>Aparelho:</strong> ${aparelho}</p>
+      <p><strong>Data:</strong> ${dataAtual}</p>
+    `;
+
+    const user = auth.currentUser;
+    if (user) {
+      cabecalhoHTML += `<p><strong>Usuário:</strong> ${user.email}</p>`;
+    }
+    document.getElementById('cabecalhoPrint').innerHTML = cabecalhoHTML;
+  }
+
+  function attachListeners(){
+    document.querySelectorAll('input.peca, #outrosDesc, #observacoes').forEach(el => {
+      el.addEventListener('input', recalcular);
+    });
+    document.getElementById('incluirMaoObra').addEventListener('change', recalcular);
+    document.getElementById('valorMaoObra').addEventListener('input', recalcular);
+  }
+
+  // ========== FIREBASE ==========
+  function login() {
+    const email = document.getElementById('email').value;
+    const senha = document.getElementById('senha').value;
+    if (!email || !senha) return alert("Preencha e-mail e senha.");
+    
+    auth.signInWithEmailAndPassword(email, senha)
+      .then(() => {
+        verificarNomeLoja();
+      })
+      .catch(err => alert("Erro ao entrar: " + err.message));
+  }
+
+  function criarConta() {
+    const email = document.getElementById('email').value;
+    const senha = document.getElementById('senha').value;
+    if (!email || !senha) return alert("Preencha e-mail e senha.");
+    
+    auth.createUserWithEmailAndPassword(email, senha)
+      .then(() => {
+        alert("Conta criada com sucesso!");
+        verificarNomeLoja();
+      })
+      .catch(err => alert("Erro ao criar conta: " + err.message));
+  }
+
+  function logout() {
+    auth.signOut()
+      .then(() => {
+        window.nomeLoja = null;
+        atualizarInterface();
+        alert("Você saiu com sucesso.");
+      })
+      .catch(err => alert("Erro ao sair: " + err.message));
+  }
+
+  function atualizarInterface() {
+    const user = auth.currentUser;
+    if (user) {
+      document.getElementById('loginSection').style.display = 'none';
+      document.getElementById('perfilSection').style.display = 'none';
+      document.getElementById('appSection').style.display = 'block';
+    } else {
+      document.getElementById('loginSection').style.display = 'block';
+      document.getElementById('appSection').style.display = 'none';
+      document.getElementById('perfilSection').style.display = 'none';
+    }
+  }
+
+  function verificarNomeLoja() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    db.collection("usuarios").doc(user.uid).collection("perfil").doc("dados").get()
+      .then(doc => {
+        if (doc.exists && doc.data().nomeLoja) {
+          window.nomeLoja = doc.data().nomeLoja;
+          atualizarInterface();
+        } else {
+          document.getElementById('loginSection').style.display = 'none';
+          document.getElementById('appSection').style.display = 'none';
+          document.getElementById('perfilSection').style.display = 'block';
+        }
+      })
+      .catch(err => {
+        console.error("Erro ao carregar perfil:", err);
+        alert("Erro ao carregar configurações.");
+      });
+  }
+
+  function salvarNomeLoja() {
+    const user = auth.currentUser;
+    const nome = document.getElementById('nomeLoja').value.trim();
+    if (!nome) return alert("Por favor, informe o nome da sua loja ou técnico.");
+
+    db.collection("usuarios").doc(user.uid).collection("perfil").doc("dados").set({
+      nomeLoja: nome
+    })
+    .then(() => {
+      window.nomeLoja = nome;
+      document.getElementById('perfilSection').style.display = 'none';
+      atualizarInterface();
+    })
+    .catch(err => alert("Erro ao salvar nome: " + err.message));
+  }
+
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      verificarNomeLoja();
+    } else {
+      atualizarInterface();
     }
   });
 
-  orc.pecas.forEach(peca => {
-    const input = document.querySelector(`input.peca[data-item="${peca.nome}"]`);
-    if (input) input.value = peca.valor;
+  function salvarOrcamento() {
+    const user = auth.currentUser;
+    if (!user) return alert("Você precisa estar logado.");
+
+    const orcamento = {
+      id: Date.now(),
+       new Date().toLocaleString('pt-BR'),
+      cliente: document.getElementById('cliente').value.trim(),
+      aparelho: document.getElementById('descricaoAparelho').value.trim(),
+      maoObraIncluida: document.getElementById('incluirMaoObra').checked,
+      valorMaoObra: parseFloat(document.getElementById('valorMaoObra').value) || 0,
+      servicos: Array.from(document.querySelectorAll('#servicosContainer .servico-item')).map(div => {
+        const checkbox = div.querySelector('input[type="checkbox"]');
+        const input = div.querySelector('input[type="number"]');
+        return {
+          nome: input.getAttribute('data-item'),
+          selecionado: checkbox.checked,
+          valor: parseFloat(input.value) || 0
+        };
+      }),
+      pecas: Array.from(document.querySelectorAll('input.peca')).map(input => ({
+        nome: input.getAttribute('data-item'),
+        valor: parseFloat(input.value) || 0
+      })),
+      outrosDesc: document.getElementById('outrosDesc').value.trim(),
+      observacoes: document.getElementById('observacoes').value.trim()
+    };
+
+    db.collection("usuarios").doc(user.uid).collection("orcamentos").add(orcamento)
+      .then(() => {
+        alert("Orçamento salvo na nuvem!");
+        carregarHistorico();
+      })
+      .catch(err => alert("Erro ao salvar: " + err.message));
+  }
+
+  function carregarHistorico() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const lista = document.getElementById('listaHistorico');
+    lista.innerHTML = '<li>Carregando...</li>';
+
+    db.collection("usuarios").doc(user.uid).collection("orcamentos")
+      .orderBy("data", "desc")
+      .get()
+      .then(snapshot => {
+        lista.innerHTML = '';
+        if (snapshot.empty) {
+          lista.innerHTML = '<li>Nenhum orçamento salvo.</li>';
+          return;
+        }
+        snapshot.forEach(doc => {
+          const orc = doc.data();
+          orc.id = doc.id;
+          const li = document.createElement('li');
+          li.style.display = 'flex';
+          li.style.justifyContent = 'space-between';
+          li.style.alignItems = 'flex-start';
+
+          const info = document.createElement('div');
+          info.style.flex = '1';
+          info.innerHTML = `
+            <strong>${orc.cliente || 'Cliente não informado'}</strong> - ${orc.aparelho || 'Sem descrição'}<br>
+            <small>${orc.data}</small>
+          `;
+          info.style.cursor = 'pointer';
+          info.onclick = () => carregarOrcamento(orc);
+
+          const btnExcluir = document.createElement('button');
+          btnExcluir.className = 'btn danger';
+          btnExcluir.style.padding = '4px 8px';
+          btnExcluir.style.fontSize = '0.8rem';
+          btnExcluir.style.marginLeft = '10px';
+          btnExcluir.textContent = '🗑️';
+          btnExcluir.title = 'Excluir este orçamento';
+          btnExcluir.onclick = (e) => {
+            e.stopPropagation();
+            if (confirm(`Excluir orçamento de "${orc.cliente || 'Cliente não informado'}" (${orc.data})?`)) {
+              db.collection("usuarios").doc(user.uid).collection("orcamentos").doc(orc.id).delete()
+                .then(() => {
+                  alert('Orçamento excluído com sucesso!');
+                  carregarHistorico();
+                })
+                .catch(err => alert("Erro ao excluir: " + err.message));
+            }
+          };
+
+          li.appendChild(info);
+          li.appendChild(btnExcluir);
+          lista.appendChild(li);
+        });
+      })
+      .catch(err => {
+        lista.innerHTML = '<li>Erro ao carregar histórico.</li>';
+        console.error(err);
+      });
+  }
+
+  function carregarOrcamento(orc) {
+    document.getElementById('cliente').value = orc.cliente || '';
+    document.getElementById('descricaoAparelho').value = orc.aparelho || '';
+
+    const maoObraCheck = document.getElementById('incluirMaoObra');
+    maoObraCheck.checked = orc.maoObraIncluida || false;
+    document.getElementById('valorMaoObra').value = orc.valorMaoObra || 120;
+    document.getElementById('valorMaoObra').disabled = !maoObraCheck.checked;
+
+    orc.servicos.forEach(serv => {
+      const checkbox = document.querySelector(`#servicosContainer input[data-item="${serv.nome}"][type="checkbox"]`);
+      const input = document.querySelector(`#servicosContainer input[data-item="${serv.nome}"][type="number"]`);
+      if (checkbox && input) {
+        checkbox.checked = serv.selecionado;
+        input.disabled = !serv.selecionado;
+        input.value = serv.valor;
+      }
+    });
+
+    orc.pecas.forEach(peca => {
+      const input = document.querySelector(`input.peca[data-item="${peca.nome}"]`);
+      if (input) input.value = peca.valor;
+    });
+
+    document.getElementById('outrosDesc').value = orc.outrosDesc || '';
+    document.getElementById('observacoes').value = orc.observacoes || '';
+
+    fecharHistorico();
+    recalcular();
+  }
+
+  function mostrarHistorico() {
+    const user = auth.currentUser;
+    if (!user) {
+      alert("Você precisa estar logado para ver o histórico.");
+      return;
+    }
+    document.getElementById('modalHistorico').style.display = 'block';
+    carregarHistorico();
+  }
+
+  function fecharHistorico() {
+    document.getElementById('modalHistorico').style.display = 'none';
+  }
+
+  function exportarHistorico() {
+    const user = auth.currentUser;
+    if (!user) return alert("Você precisa estar logado.");
+
+    db.collection("usuarios").doc(user.uid).collection("orcamentos")
+      .get()
+      .then(snapshot => {
+        const historico = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (historico.length === 0) {
+          alert('Nenhum orçamento para exportar.');
+          return;
+        }
+
+        const dataStr = JSON.stringify(historico, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `historico_orcamentos_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      })
+      .catch(err => alert("Erro ao exportar: " + err.message));
+  }
+
+  // ========== INICIALIZAÇÃO ==========
+  document.addEventListener('DOMContentLoaded', () => {
+    renderizarServicos();
+    attachListeners();
+    recalcular();
   });
 
-  document.getElementById('outrosDesc').value = orc.outrosDesc || '';
-  document.getElementById('observacoes').value = orc.observacoes || '';
-
-  fecharHistorico();
-  recalcular();
-}
-
-function mostrarHistorico() {
-  const user = auth.currentUser;
-  if (!user) {
-    alert("Você precisa estar logado para ver o histórico.");
-    return;
-  }
-  document.getElementById('modalHistorico').style.display = 'block';
-  carregarHistorico();
-}
-
-function fecharHistorico() {
-  document.getElementById('modalHistorico').style.display = 'none';
-}
-
-function exportarHistorico() {
-  const user = auth.currentUser;
-  if (!user) return alert("Você precisa estar logado.");
-
-  db.collection("usuarios").doc(user.uid).collection("orcamentos")
-    .get()
-    .then(snapshot => {
-      const historico = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      if (historico.length === 0) {
-        alert('Nenhum orçamento para exportar.');
-        return;
-      }
-
-      const dataStr = JSON.stringify(historico, null, 2);
-      const blob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `historico_orcamentos_${new Date().toISOString().slice(0,10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    })
-    .catch(err => alert("Erro ao exportar: " + err.message));
-}
-
-// ========== INICIALIZAÇÃO ==========
-document.addEventListener('DOMContentLoaded', () => {
-  renderizarServicos();
-  attachListeners();
-  recalcular();
-});
-
-window.addEventListener('keydown', function(e){
-  if((e.ctrlKey||e.metaKey) && e.key === 's'){
-    e.preventDefault();
-    salvarOrcamento();
-  }
-});
+  window.addEventListener('keydown', function(e){
+    if((e.ctrlKey||e.metaKey) && e.key === 's'){
+      e.preventDefault();
+      salvarOrcamento();
+    }
+  });
 </script>
 </body>
 </html>
