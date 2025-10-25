@@ -452,29 +452,35 @@ window.addEventListener('keydown', function(e){
   import { salvarOrcamentoFirestore, carregarOrcamentosOnce, excluirOrcamentoFirestore } from './orcamento.js';
 
   // Substitui a função de salvar para usar Firestore
-  window.salvarOrcamento = async function() {
-    try {
-      const itens = getItensCobrados();
-      const totalTexto = document.getElementById('custo').innerText;
-      const total = parseFloat(totalTexto.replace(/\D/g, '')) / 100;
+window.salvarOrcamento = async function() {
+  try {
+    const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
+    const valorMaoObra = incluirMaoObra ? parseFloat(document.getElementById('valorMaoObra').value || 0) : 0;
+    
+    const itens = getItensCobrados(); // já inclui mão de obra se marcada
+    const totalTexto = document.getElementById('custo').innerText;
+    const total = parseFloat(totalTexto.replace(/\D/g, '')) / 100;
 
-      const orcamento = {
-        data: new Date().toLocaleString('pt-BR'),
-        cliente: document.getElementById('cliente').value.trim(),
-        aparelho: document.getElementById('descricaoAparelho').value.trim(),
-        itens: itens,
-        total: total,
-        observacoes: document.getElementById('observacoes').value.trim()
-      };
+    const orcamento = {
+      data: new Date().toLocaleString('pt-BR'),
+      cliente: document.getElementById('cliente').value.trim(),
+      aparelho: document.getElementById('descricaoAparelho').value.trim(),
+      // 👇 Salva o estado da mão de obra EXPLICITAMENTE
+      maoObraIncluida: incluirMaoObra,
+      valorMaoObra: valorMaoObra,
+      itens: itens,
+      total: total,
+      observacoes: document.getElementById('observacoes').value.trim()
+    };
 
-      await salvarOrcamentoFirestore(orcamento);
-      alert('Orçamento salvo no Firebase com sucesso!');
-      recalcular();
-    } catch (err) {
-      console.error('Erro ao salvar no Firebase:', err);
-      alert('Erro ao salvar: ' + (err.message || 'verifique o console (F12)'));
-    }
-  };
+    await salvarOrcamentoFirestore(orcamento);
+    alert('Orçamento salvo no Firebase com sucesso!');
+    recalcular();
+  } catch (err) {
+    console.error('Erro ao salvar no Firebase:', err);
+    alert('Erro ao salvar: ' + (err.message || 'verifique o console (F12)'));
+  }
+};
 
   // Substitui o histórico para usar Firestore
   window.mostrarHistorico = async function() {
