@@ -1,9 +1,8 @@
 // orcamento.js (type=module)
-import { auth, db, collection, query, where, orderBy, onSnapshot, addDoc, doc, deleteDoc, getDocs, getDoc, onAuthStateChanged, signOut } from './firebase.js';
+import { auth, db, collection, query, where, orderBy, onSnapshot, addDoc, doc, deleteDoc, getDocs, onAuthStateChanged, signOut, getDoc } from './firebase.js';
 
 let perfilUsuario = null;
 
-// Protege a página e carrega o perfil
 onAuthStateChanged(auth, async user => {
   if (!user) {
     location.href = 'login.html';
@@ -11,7 +10,6 @@ onAuthStateChanged(auth, async user => {
   }
 
   try {
-    // Carrega perfil do usuário
     const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
     if (userDoc.exists()) {
       perfilUsuario = userDoc.data();
@@ -26,7 +24,6 @@ onAuthStateChanged(auth, async user => {
         "Instalação de drivers": 30
       };
       
-      // Dispara evento para atualizar a UI
       if (typeof window.renderizarServicos === 'function') {
         window.renderizarServicos();
       }
@@ -54,7 +51,6 @@ onAuthStateChanged(auth, async user => {
   }
 });
 
-// Função para salvar orçamento com dados do perfil
 export async function salvarOrcamentoFirestore(orcamento) {
   const user = auth.currentUser;
   if (!user) throw new Error('Usuário não autenticado');
@@ -62,7 +58,6 @@ export async function salvarOrcamentoFirestore(orcamento) {
   const payload = {
     ...orcamento,
     uid: user.uid,
-    // Inclui dados da empresa para o PDF
     empresa: perfilUsuario?.empresa || 'Orçamento Técnico',
     cnpj: perfilUsuario?.cnpj || null,
     telefone: perfilUsuario?.telefone || null,
@@ -85,7 +80,6 @@ export async function carregarOrcamentosOnce() {
   return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
-// Exporta perfil para uso no index.html (ex: PDF)
 export function getPerfilUsuario() {
   return perfilUsuario;
 }
