@@ -160,7 +160,6 @@
   <label>Descrição do aparelho</label>
   <input id="descricaoAparelho" type="text" placeholder="Ex: Notebook Acer E5-511 / Desktop HP" />
 
-  <!-- Checkbox para Mão de Obra -->
   <div class="section">
     <h3>Mão de Obra</h3>
     <div class="checkbox-container">
@@ -173,7 +172,6 @@
   <div class="section">
     <h3>Serviços (selecione os desejados)</h3>
     <div id="servicosContainer">
-      <!-- Será preenchido por JS -->
     </div>
   </div>
 
@@ -251,7 +249,6 @@
       <button class="btn secondary" onclick="salvarOrcamento()">Salvar Orçamento</button>
       <button class="btn history" onclick="mostrarHistorico()">Histórico</button>
       <button class="btn secondary" onclick="window.print()">Gerar PDF / Imprimir</button>
-      <!-- Botão de sair -->
       <button id="btnSair" class="btn secondary" style="background:#dc3545; margin-left: 8px;">Sair</button>
     </div>
 
@@ -260,7 +257,6 @@
     </footer>
   </div>
 
-  <!-- Modal de Histórico -->
   <div id="modalHistorico">
     <div class="content">
       <span class="close" onclick="fecharHistorico()">&times;</span>
@@ -274,9 +270,8 @@
     </div>
   </div>
 
-<!-- Seu código JavaScript original (sem module) -->
 <script>
-// Preços sugeridos para serviços
+// Preços sugeridos para serviços (serão substituídos pelo perfil do usuário)
 const PRECOS_SUGERIDOS = {
   "Limpeza interna e troca de pasta térmica": 100,
   "Formatação": 60,
@@ -405,15 +400,7 @@ function recalcular(){
   document.getElementById('obsContent').innerText = obsText;
   document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
 
-  const dataAtual = new Date().toLocaleString('pt-BR');
-  const cliente = document.getElementById('cliente').value.trim() || 'Não informado';
-  const aparelho = document.getElementById('descricaoAparelho').value.trim() || 'Não informado';
-  document.getElementById('cabecalhoPrint').innerHTML = `
-    <h1>Orçamento Técnico</h1>
-    <p><strong>Cliente:</strong> ${cliente}</p>
-    <p><strong>Aparelho:</strong> ${aparelho}</p>
-    <p><strong>Data:</strong> ${dataAtual}</p>
-  `;
+  // O cabeçalho do PDF será atualizado pelo módulo Firebase
 }
 
 function attachListeners(){
@@ -424,7 +411,6 @@ function attachListeners(){
   document.getElementById('valorMaoObra').addEventListener('input', recalcular);
 }
 
-// Funções de histórico e exportação (mantidas para compatibilidade com exportarHistorico)
 function fecharHistorico() {
   document.getElementById('modalHistorico').style.display = 'none';
 }
@@ -450,33 +436,6 @@ window.addEventListener('keydown', function(e){
 <script type="module">
   import { salvarOrcamentoFirestore, carregarOrcamentosOnce, excluirOrcamentoFirestore, getPerfilUsuario } from './orcamento.js';
 
-  // Atualiza o cabeçalho do PDF com dados da empresa
-  function atualizarCabecalhoPDF() {
-    const perfil = getPerfilUsuario();
-    const dataAtual = new Date().toLocaleString('pt-BR');
-    const cliente = document.getElementById('cliente').value.trim() || 'Não informado';
-    const aparelho = document.getElementById('descricaoAparelho').value.trim() || 'Não informado';
-    
-    let cabecalho = `<h1>${perfil?.empresa || 'Orçamento Técnico'}</h1>`;
-    if (perfil?.cnpj) cabecalho += `<p>CNPJ: ${perfil.cnpj}</p>`;
-    if (perfil?.telefone) cabecalho += `<p>Contato: ${perfil.telefone}</p>`;
-    cabecalho += `
-      <p><strong>Cliente:</strong> ${cliente}</p>
-      <p><strong>Aparelho:</strong> ${aparelho}</p>
-      <p><strong>Data:</strong> ${dataAtual}</p>
-    `;
-    
-    document.getElementById('cabecalhoPrint').innerHTML = cabecalho;
-  }
-
-  // Substitui recalcular para usar a nova função de PDF
-  const recalcularOriginal = window.recalcular;
-  window.recalcular = function() {
-    recalcularOriginal();
-    atualizarCabecalhoPDF();
-  };
-
-  // Salvar com mão de obra explícita
   window.salvarOrcamento = async function() {
     try {
       const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
@@ -487,7 +446,7 @@ window.addEventListener('keydown', function(e){
       const total = parseFloat(totalTexto.replace(/\D/g, '')) / 100;
 
       const orcamento = {
-        data: new Date().toLocaleString('pt-BR'),
+         new Date().toLocaleString('pt-BR'),
         cliente: document.getElementById('cliente').value.trim(),
         aparelho: document.getElementById('descricaoAparelho').value.trim(),
         maoObraIncluida: incluirMaoObra,
@@ -506,7 +465,6 @@ window.addEventListener('keydown', function(e){
     }
   };
 
-  // Carregar histórico
   window.mostrarHistorico = async function() {
     try {
       const orcamentos = await carregarOrcamentosOnce();
@@ -563,7 +521,6 @@ window.addEventListener('keydown', function(e){
     }
   };
 
-  // Carregar orçamento do Firestore
   window.carregarDoFirestore = function(orc) {
     document.getElementById('cliente').value = orc.cliente || '';
     document.getElementById('descricaoAparelho').value = orc.aparelho || '';
@@ -615,9 +572,32 @@ window.addEventListener('keydown', function(e){
     fecharHistorico();
     recalcular();
   };
+
+  function atualizarCabecalhoPDF() {
+    const perfil = getPerfilUsuario();
+    const dataAtual = new Date().toLocaleString('pt-BR');
+    const cliente = document.getElementById('cliente').value.trim() || 'Não informado';
+    const aparelho = document.getElementById('descricaoAparelho').value.trim() || 'Não informado';
+    
+    let cabecalho = `<h1>${perfil?.empresa || 'Orçamento Técnico'}</h1>`;
+    if (perfil?.cnpj) cabecalho += `<p>CNPJ: ${perfil.cnpj}</p>`;
+    if (perfil?.telefone) cabecalho += `<p>Contato: ${perfil.telefone}</p>`;
+    cabecalho += `
+      <p><strong>Cliente:</strong> ${cliente}</p>
+      <p><strong>Aparelho:</strong> ${aparelho}</p>
+      <p><strong>Data:</strong> ${dataAtual}</p>
+    `;
+    
+    document.getElementById('cabecalhoPrint').innerHTML = cabecalho;
+  }
+
+  const recalcularOriginal = window.recalcular;
+  window.recalcular = function() {
+    recalcularOriginal();
+    atualizarCabecalhoPDF();
+  };
 </script>
 
-<!-- Carrega orcamento.js para proteger a página -->
 <script type="module" src="./orcamento.js"></script>
 </body>
 </html>
