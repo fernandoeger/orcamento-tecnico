@@ -447,42 +447,66 @@ window.addEventListener('keydown', function(e){
 });
 </script>
 
-<!-- Integração com Firebase (module) -->
 <script type="module">
-  import { salvarOrcamentoFirestore, carregarOrcamentosOnce, excluirOrcamentoFirestore } from './orcamento.js';
+  import { salvarOrcamentoFirestore, carregarOrcamentosOnce, excluirOrcamentoFirestore, getPerfilUsuario } from './orcamento.js';
 
-  // Substitui a função de salvar para usar Firestore
-window.salvarOrcamento = async function() {
-  try {
-    const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
-    const valorMaoObra = incluirMaoObra ? parseFloat(document.getElementById('valorMaoObra').value || 0) : 0;
+  // Atualiza o cabeçalho do PDF com dados da empresa
+  function atualizarCabecalhoPDF() {
+    const perfil = getPerfilUsuario();
+    const dataAtual = new Date().toLocaleString('pt-BR');
+    const cliente = document.getElementById('cliente').value.trim() || 'Não informado';
+    const aparelho = document.getElementById('descricaoAparelho').value.trim() || 'Não informado';
     
-    const itens = getItensCobrados(); // já inclui mão de obra se marcada
-    const totalTexto = document.getElementById('custo').innerText;
-    const total = parseFloat(totalTexto.replace(/\D/g, '')) / 100;
-
-    const orcamento = {
-      data: new Date().toLocaleString('pt-BR'),
-      cliente: document.getElementById('cliente').value.trim(),
-      aparelho: document.getElementById('descricaoAparelho').value.trim(),
-      // 👇 Salva o estado da mão de obra EXPLICITAMENTE
-      maoObraIncluida: incluirMaoObra,
-      valorMaoObra: valorMaoObra,
-      itens: itens,
-      total: total,
-      observacoes: document.getElementById('observacoes').value.trim()
-    };
-
-    await salvarOrcamentoFirestore(orcamento);
-    alert('Orçamento salvo no Firebase com sucesso!');
-    recalcular();
-  } catch (err) {
-    console.error('Erro ao salvar no Firebase:', err);
-    alert('Erro ao salvar: ' + (err.message || 'verifique o console (F12)'));
+    let cabecalho = `<h1>${perfil?.empresa || 'Orçamento Técnico'}</h1>`;
+    if (perfil?.cnpj) cabecalho += `<p>CNPJ: ${perfil.cnpj}</p>`;
+    if (perfil?.telefone) cabecalho += `<p>Contato: ${perfil.telefone}</p>`;
+    cabecalho += `
+      <p><strong>Cliente:</strong> ${cliente}</p>
+      <p><strong>Aparelho:</strong> ${aparelho}</p>
+      <p><strong>Data:</strong> ${dataAtual}</p>
+    `;
+    
+    document.getElementById('cabecalhoPrint').innerHTML = cabecalho;
   }
-};
 
-  // Substitui o histórico para usar Firestore
+  // Substitui recalcular para usar a nova função de PDF
+  const recalcularOriginal = window.recalcular;
+  window.recalcular = function() {
+    recalcularOriginal();
+    atualizarCabecalhoPDF();
+  };
+
+  // Salvar com mão de obra explícita
+  window.salvarOrcamento = async function() {
+    try {
+      const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
+      const valorMaoObra = incluirMaoObra ? parseFloat(document.getElementById('valorMaoObra').value || 0) : 0;
+      
+      const itens = getItensCobrados();
+      const totalTexto = document.getElementById('custo').innerText;
+      const total = parseFloat(totalTexto.replace(/\D/g, '')) / 100;
+
+      const orcamento = {
+        data: new Date().toLocaleString('pt-BR'),
+        cliente: document.getElementById('cliente').value.trim(),
+        aparelho: document.getElementById('descricaoAparelho').value.trim(),
+        maoObraIncluida: incluirMaoObra,
+        valorMaoObra: valorMaoObra,
+        itens: itens,
+        total: total,
+        observacoes: document.getElementById('observacoes').value.trim()
+      };
+
+      await salvarOrcamentoFirestore(orcamento);
+      alert('Orçamento salvo no Firebase com sucesso!');
+      recalcular();
+    } catch (err) {
+      console.error('Erro ao salvar no Firebase:', err);
+      alert('Erro ao salvar: ' + (err.message || 'verifique o console (F12)'));
+    }
+  };
+
+  // Carregar histórico
   window.mostrarHistorico = async function() {
     try {
       const orcamentos = await carregarOrcamentosOnce();
@@ -539,68 +563,61 @@ window.salvarOrcamento = async function() {
     }
   };
 
-  // Função para carregar orçamento do Firestore no formulário
+  // Carregar orçamento do Firestore
   window.carregarDoFirestore = function(orc) {
-  // Preenche campos básicos
-  document.getElementById('cliente').value = orc.cliente || '';
-  document.getElementById('descricaoAparelho').value = orc.aparelho || '';
-  document.getElementById('observacoes').value = orc.observacoes || '';
+    document.getElementById('cliente').value = orc.cliente || '';
+    document.getElementById('descricaoAparelho').value = orc.aparelho || '';
+    document.getElementById('observacoes').value = orc.observacoes || '';
 
-  // 👇 Restaura o estado da Mão de Obra
-  const maoObraCheck = document.getElementById('incluirMaoObra');
-  maoObraCheck.checked = orc.maoObraIncluida === true;
-  document.getElementById('valorMaoObra').value = orc.valorMaoObra || 120;
-  document.getElementById('valorMaoObra').disabled = !maoObraCheck.checked;
+    const maoObraCheck = document.getElementById('incluirMaoObra');
+    maoObraCheck.checked = orc.maoObraIncluida === true;
+    document.getElementById('valorMaoObra').value = orc.valorMaoObra || 120;
+    document.getElementById('valorMaoObra').disabled = !maoObraCheck.checked;
 
-  // Limpa outros campos
-  document.getElementById('outrosDesc').value = '';
-  document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(cb => {
-    cb.checked = false;
-    const input = cb.closest('.servico-item').querySelector('input[type="number"]');
-    input.disabled = true;
-    input.value = PRECOS_SUGERIDOS[cb.getAttribute('data-item')] || 0;
-  });
-  document.querySelectorAll('input.peca').forEach(input => {
-    input.value = 0;
-  });
+    document.getElementById('outrosDesc').value = '';
+    document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(cb => {
+      cb.checked = false;
+      const input = cb.closest('.servico-item').querySelector('input[type="number"]');
+      input.disabled = true;
+      input.value = window.PRECOS_SUGERIDOS[cb.getAttribute('data-item')] || 0;
+    });
+    document.querySelectorAll('input.peca').forEach(input => {
+      input.value = 0;
+    });
 
-  // Restaura serviços e peças a partir de `itens`
-  if (orc.itens && Array.isArray(orc.itens)) {
-    orc.itens.forEach(item => {
-      // Pula "Mão de Obra" aqui, pois já foi tratada
-      if (item.nome === "Mão de Obra") return;
+    if (orc.itens && Array.isArray(orc.itens)) {
+      orc.itens.forEach(item => {
+        if (item.nome === "Mão de Obra") return;
 
-      // Tenta como serviço
-      const servicoCheckbox = document.querySelector(`#servicosContainer input[data-item="${item.nome}"][type="checkbox"]`);
-      if (servicoCheckbox) {
-        servicoCheckbox.checked = true;
-        const input = servicoCheckbox.closest('.servico-item').querySelector('input[type="number"]');
-        input.disabled = false;
-        input.value = item.valor;
-      } else {
-        // É uma peça
-        let nomePeca = item.nome;
-        if (item.nome.includes('Outros (')) {
-          const match = item.nome.match(/Outros \((.+)\)/);
-          if (match) {
-            document.getElementById('outrosDesc').value = match[1];
-            nomePeca = 'Outros';
+        const servicoCheckbox = document.querySelector(`#servicosContainer input[data-item="${item.nome}"][type="checkbox"]`);
+        if (servicoCheckbox) {
+          servicoCheckbox.checked = true;
+          const input = servicoCheckbox.closest('.servico-item').querySelector('input[type="number"]');
+          input.disabled = false;
+          input.value = item.valor;
+        } else {
+          let nomePeca = item.nome;
+          if (item.nome.includes('Outros (')) {
+            const match = item.nome.match(/Outros \((.+)\)/);
+            if (match) {
+              document.getElementById('outrosDesc').value = match[1];
+              nomePeca = 'Outros';
+            }
+          }
+          const pecaInput = document.querySelector(`input.peca[data-item="${nomePeca}"]`);
+          if (pecaInput) {
+            pecaInput.value = (item.valor / 1.25).toFixed(2);
           }
         }
-        const pecaInput = document.querySelector(`input.peca[data-item="${nomePeca}"]`);
-        if (pecaInput) {
-          pecaInput.value = (item.valor / 1.25).toFixed(2);
-        }
-      }
-    });
-  }
+      });
+    }
 
-  fecharHistorico();
-  recalcular();
-};
+    fecharHistorico();
+    recalcular();
+  };
 </script>
 
-<!-- Carrega orcamento.js para proteger a página com autenticação -->
+<!-- Carrega orcamento.js para proteger a página -->
 <script type="module" src="./orcamento.js"></script>
 </body>
 </html>
