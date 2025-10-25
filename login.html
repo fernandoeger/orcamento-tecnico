@@ -23,7 +23,6 @@
   <label>Senha</label>
   <input id="senha" type="password" placeholder="Senha (min 6 caracteres)" />
 
-  <!-- Campos de empresa (só aparecem ao criar conta) -->
   <div id="camposEmpresa">
     <label>Nome da Empresa / Técnico <small>(obrigatório)</small></label>
     <input id="empresa" type="text" placeholder="Ex: Tech Solutions" />
@@ -43,16 +42,12 @@
   <p class="small">Ao entrar, você será redirecionado ao app e seu histórico será sincronizado.</p>
 
   <script type="module">
-    import { auth, db } from './firebase.js';
+    import { auth, db, doc, setDoc } from './firebase.js';
     import { 
       createUserWithEmailAndPassword, 
       signInWithEmailAndPassword, 
       onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
-    import { 
-      doc, 
-      setDoc 
-    } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js";
 
     const emailEl = document.getElementById('email');
     const senhaEl = document.getElementById('senha');
@@ -60,7 +55,6 @@
     const btnCriar = document.getElementById('btnCriar');
     const camposEmpresa = document.getElementById('camposEmpresa');
 
-    // Mostrar/ocultar campos de empresa
     btnCriar.addEventListener('click', () => {
       camposEmpresa.style.display = 'block';
     });
@@ -68,7 +62,6 @@
       camposEmpresa.style.display = 'none';
     });
 
-    // Criar conta
     btnCriar.addEventListener('click', async () => {
       const email = emailEl.value.trim();
       const senha = senhaEl.value;
@@ -83,7 +76,6 @@
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
         
-        // Salvar perfil no Firestore
         const perfil = {
           uid: userCredential.user.uid,
           email: email,
@@ -110,7 +102,6 @@
       }
     });
 
-    // Login
     btnLogin.addEventListener('click', async () => {
       const email = emailEl.value.trim();
       const senha = senhaEl.value;
@@ -123,7 +114,6 @@
       }
     });
 
-    // Redireciona se já estiver logado
     onAuthStateChanged(auth, user => {
       if (user) location.href = 'index.html';
     });
