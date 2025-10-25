@@ -541,54 +541,63 @@ window.salvarOrcamento = async function() {
 
   // Função para carregar orçamento do Firestore no formulário
   window.carregarDoFirestore = function(orc) {
-    document.getElementById('cliente').value = orc.cliente || '';
-    document.getElementById('descricaoAparelho').value = orc.aparelho || '';
-    document.getElementById('observacoes').value = orc.observacoes || '';
+  // Preenche campos básicos
+  document.getElementById('cliente').value = orc.cliente || '';
+  document.getElementById('descricaoAparelho').value = orc.aparelho || '';
+  document.getElementById('observacoes').value = orc.observacoes || '';
 
-    document.getElementById('incluirMaoObra').checked = false;
-    document.getElementById('valorMaoObra').value = 120;
-    document.getElementById('valorMaoObra').disabled = true;
-    document.getElementById('outrosDesc').value = '';
+  // 👇 Restaura o estado da Mão de Obra
+  const maoObraCheck = document.getElementById('incluirMaoObra');
+  maoObraCheck.checked = orc.maoObraIncluida === true;
+  document.getElementById('valorMaoObra').value = orc.valorMaoObra || 120;
+  document.getElementById('valorMaoObra').disabled = !maoObraCheck.checked;
 
-    document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(cb => {
-      cb.checked = false;
-      const input = cb.closest('.servico-item').querySelector('input[type="number"]');
-      input.disabled = true;
-      input.value = PRECOS_SUGERIDOS[cb.getAttribute('data-item')] || 0;
-    });
+  // Limpa outros campos
+  document.getElementById('outrosDesc').value = '';
+  document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(cb => {
+    cb.checked = false;
+    const input = cb.closest('.servico-item').querySelector('input[type="number"]');
+    input.disabled = true;
+    input.value = PRECOS_SUGERIDOS[cb.getAttribute('data-item')] || 0;
+  });
+  document.querySelectorAll('input.peca').forEach(input => {
+    input.value = 0;
+  });
 
-    document.querySelectorAll('input.peca').forEach(input => {
-      input.value = 0;
-    });
+  // Restaura serviços e peças a partir de `itens`
+  if (orc.itens && Array.isArray(orc.itens)) {
+    orc.itens.forEach(item => {
+      // Pula "Mão de Obra" aqui, pois já foi tratada
+      if (item.nome === "Mão de Obra") return;
 
-    if (orc.itens && Array.isArray(orc.itens)) {
-      orc.itens.forEach(item => {
-        const servicoCheckbox = document.querySelector(`#servicosContainer input[data-item="${item.nome}"][type="checkbox"]`);
-        if (servicoCheckbox) {
-          servicoCheckbox.checked = true;
-          const input = servicoCheckbox.closest('.servico-item').querySelector('input[type="number"]');
-          input.disabled = false;
-          input.value = item.valor;
-        } else {
-          let nomePeca = item.nome;
-          if (item.nome.includes('Outros (')) {
-            const match = item.nome.match(/Outros \((.+)\)/);
-            if (match) {
-              document.getElementById('outrosDesc').value = match[1];
-              nomePeca = 'Outros';
-            }
-          }
-          const pecaInput = document.querySelector(`input.peca[data-item="${nomePeca}"]`);
-          if (pecaInput) {
-            pecaInput.value = (item.valor / 1.25).toFixed(2);
+      // Tenta como serviço
+      const servicoCheckbox = document.querySelector(`#servicosContainer input[data-item="${item.nome}"][type="checkbox"]`);
+      if (servicoCheckbox) {
+        servicoCheckbox.checked = true;
+        const input = servicoCheckbox.closest('.servico-item').querySelector('input[type="number"]');
+        input.disabled = false;
+        input.value = item.valor;
+      } else {
+        // É uma peça
+        let nomePeca = item.nome;
+        if (item.nome.includes('Outros (')) {
+          const match = item.nome.match(/Outros \((.+)\)/);
+          if (match) {
+            document.getElementById('outrosDesc').value = match[1];
+            nomePeca = 'Outros';
           }
         }
-      });
-    }
+        const pecaInput = document.querySelector(`input.peca[data-item="${nomePeca}"]`);
+        if (pecaInput) {
+          pecaInput.value = (item.valor / 1.25).toFixed(2);
+        }
+      }
+    });
+  }
 
-    fecharHistorico();
-    recalcular();
-  };
+  fecharHistorico();
+  recalcular();
+};
 </script>
 
 <!-- Carrega orcamento.js para proteger a página com autenticação -->
