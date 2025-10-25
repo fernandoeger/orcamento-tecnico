@@ -12,7 +12,8 @@ import {
   addDoc,
   doc,
   deleteDoc,
-  getDocs
+  getDocs,
+  getDoc
 } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -28,7 +29,6 @@ export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// Ativa persistência offline
 try {
   await enableIndexedDbPersistence(db);
   console.log("Firestore persistence enabled");
@@ -36,7 +36,6 @@ try {
   console.warn("Could not enable persistence:", err?.message);
 }
 
-// Exporta tudo que outros arquivos precisam
 export {
   collection,
   query,
@@ -47,6 +46,7 @@ export {
   doc,
   deleteDoc,
   getDocs,
+  getDoc,
   onAuthStateChanged,
   signOut
 };
