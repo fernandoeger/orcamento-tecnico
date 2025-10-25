@@ -294,6 +294,7 @@ function sumValues(selector){
 }
 
 function renderizarServicos() {
+  console.log("Renderizando serviços...");
   const container = document.getElementById('servicosContainer');
   container.innerHTML = '';
   for (const [servico, preco] of Object.entries(PRECOS_SUGERIDOS)) {
@@ -420,6 +421,7 @@ function exportarHistorico() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  console.log("DOM carregado. Iniciando renderização...");
   renderizarServicos();
   attachListeners();
   recalcular();
