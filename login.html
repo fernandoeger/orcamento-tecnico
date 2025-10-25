@@ -31,7 +31,7 @@
 
   <script type="module">
     import { auth } from './firebase.js';
-    import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
+    import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
 
     const emailEl = document.getElementById('email');
     const senhaEl = document.getElementById('senha');
@@ -62,8 +62,7 @@
       }
     });
 
-    // Se o usuário já estiver logado, redireciona direto
-    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js";
+    // Redireciona se já estiver logado
     onAuthStateChanged(auth, user => {
       if (user) location.href = 'index.html';
     });
