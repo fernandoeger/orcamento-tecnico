@@ -13,14 +13,15 @@ import {
   doc,
   deleteDoc,
   getDocs,
-  getDoc
+  getDoc,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDp_NCTbF7zQ7uykCXIQs5VbWwVrvZ6948",
   authDomain: "orcamento-f0d12.firebaseapp.com",
   projectId: "orcamento-f0d12",
-  storageBucket: "orcamento-f0d12.firebasestorage.app",
+  storageBucket: "orcamento-f0d12.appspot.com",
   messagingSenderId: "644929362209",
   appId: "1:644929362209:web:323af9e5eda801da998660"
 };
@@ -29,12 +30,12 @@ export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-try {
-  await enableIndexedDbPersistence(db);
+// Ativar IndexedDB persistence
+enableIndexedDbPersistence(db).then(() => {
   console.log("Firestore persistence enabled");
-} catch (err) {
+}).catch(err => {
   console.warn("Could not enable persistence:", err?.message);
-}
+});
 
 export {
   collection,
@@ -48,5 +49,6 @@ export {
   getDocs,
   getDoc,
   onAuthStateChanged,
-  signOut
+  signOut,
+  setDoc
 };
