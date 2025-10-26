@@ -1,12 +1,13 @@
 const CACHE_NAME = 'orcamento-cache-v1';
 const ASSETS = [
-  './',
   './index.html',
   './login.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  // adicione outros arquivos estáticos que desejar cachear
+  './icon-1024.png',
+  './firebase.js',
+  './orcamento.js'
 ];
 
 self.addEventListener('install', event => {
