@@ -1,7 +1,19 @@
 // orcamento.js (type=module)
-import { auth, db, collection, query, where, orderBy, onSnapshot, addDoc, doc, deleteDoc, getDocs, onAuthStateChanged, signOut, getDoc } from './firebase.js';
+import { auth, db, collection, query, where, orderBy, addDoc, doc, deleteDoc, getDocs, getDoc, onAuthStateChanged, signOut } from './firebase.js';
 
 let perfilUsuario = null;
+
+// Define PREÇOS_SUGERIDOS padrão para não quebrar a renderização antes do Firebase
+window.PRECOS_SUGERIDOS = {
+  "Limpeza interna e troca de pasta térmica": 100,
+  "Formatação": 60,
+  "formatação + Backup": 100,
+  "Reballing": 250,
+  "Atualização de BIOS": 40,
+  "Diagnóstico": 30,
+  "Troca de teclado (mão de obra)": 90,
+  "Instalação de drivers": 30
+};
 
 onAuthStateChanged(auth, async user => {
   if (!user) {
@@ -13,35 +25,10 @@ onAuthStateChanged(auth, async user => {
     const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
     if (userDoc.exists()) {
       perfilUsuario = userDoc.data();
-      window.PRECOS_SUGERIDOS = perfilUsuario.servicos || {
-        "Limpeza interna e troca de pasta térmica": 100,
-        "Formatação": 60,
-        "formatação + Backup": 100,
-        "Reballing": 250,
-        "Atualização de BIOS": 40,
-        "Diagnóstico": 30,
-        "Troca de teclado (mão de obra)": 90,
-        "Instalação de drivers": 30
-      };
-      
-      if (typeof window.renderizarServicos === 'function') {
-        window.renderizarServicos();
-      }
-    } else {
-      console.warn('Perfil não encontrado. Usando valores padrão.');
-      window.PRECOS_SUGERIDOS = {
-        "Limpeza interna e troca de pasta térmica": 100,
-        "Formatação": 60,
-        "formatação + Backup": 100,
-        "Reballing": 250,
-        "Atualização de BIOS": 40,
-        "Diagnóstico": 30,
-        "Troca de teclado (mão de obra)": 90,
-        "Instalação de drivers": 30
-      };
+      window.PRECOS_SUGERIDOS = perfilUsuario.servicos || window.PRECOS_SUGERIDOS;
+      if (typeof window.renderizarServicos === 'function') window.renderizarServicos();
     }
 
-    console.log('Logado como', user.email);
     const btnSair = document.getElementById('btnSair');
     if (btnSair) {
       btnSair.addEventListener('click', () => signOut(auth).then(() => location.href = 'login.html'));
@@ -54,7 +41,7 @@ onAuthStateChanged(auth, async user => {
 export async function salvarOrcamentoFirestore(orcamento) {
   const user = auth.currentUser;
   if (!user) throw new Error('Usuário não autenticado');
-  
+
   const payload = {
     ...orcamento,
     uid: user.uid,
@@ -63,7 +50,7 @@ export async function salvarOrcamentoFirestore(orcamento) {
     telefone: perfilUsuario?.telefone || null,
     createdAt: Date.now()
   };
-  
+
   const docRef = await addDoc(collection(db, 'orcamentos'), payload);
   return docRef.id;
 }
