@@ -3,37 +3,10 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Orçamento</title>
-
-  <!-- Meta tags para iOS -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Orçamento Técnico">
-
-  <!-- Ícones para iOS -->
-  <link rel="apple-touch-icon" sizes="180x180" href="icon-192.png">
-  <link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
-  <link rel="apple-touch-icon" sizes="120x120" href="icon-120.png">
-  <link rel="apple-touch-icon" sizes="76x76" href="icon-76.png">
-  <link rel="apple-touch-icon" href="icon-192.png">
+  <title>Orçamento Técnico</title>
+  <link rel="manifest" href="./manifest.json">
 
   <style>
-    @media screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) {
-      body::before {
-        content: '';
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: #0b76ef url('icon-1024.png') center/contain no-repeat;
-        z-index: 9999;
-        animation: fadeOut 1s ease-out forwards;
-      }
-    }
-
-    @keyframes fadeOut {
-      to { opacity: 0; visibility: hidden; }
-    }
-
-    /* Estilos Gerais */
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:980px;margin:18px auto;padding:12px}
     h1{margin-bottom:6px}
     label{display:block;margin-top:10px;font-weight:600}
@@ -61,94 +34,6 @@
     .servico-item input[type="checkbox"] { width: auto; margin: 0; }
     .servico-item input[type="number"] { flex: 1; }
     @media(max-width:700px){ .two-cols{flex-direction:column} }
-
-    /* Estilos de Impressão */
-    @media print {
-      body { 
-        margin: 0; 
-        padding: 20px; 
-        max-width: none; 
-        font-size: 10pt; 
-        background: white !important;
-      }
-      body > *:not(.resumo-final):not(.cabecalho-print) {
-        display: none !important;
-      }
-      .resumo-final { 
-        border: none; 
-        padding: 0; 
-        background: none; 
-        display: block !important; 
-        width: 100%;
-      }
-      .resumo-final .btn,
-      .resumo-final .ocultar-print,
-      .resumo-final footer,
-      .resumo-final > div[style*="margin-top:12px"] {
-        display: none !important;
-      }
-      .cabecalho-print {
-        display: block !important;
-        text-align: center;
-        margin-bottom: 20px;
-        border-bottom: 2px solid #000;
-        padding-bottom: 10px;
-        width: 100%;
-      }
-      .cabecalho-print h1 { margin: 0; font-size: 1.4em; }
-      .cabecalho-print p { margin: 4px 0; color: #333; }
-      .tabela-cobranca table, .resumo-final table { 
-        border: 1px solid #333; 
-        width: 100%;
-        margin-top: 10px;
-      }
-      .tabela-cobranca th, .tabela-cobranca td, 
-      .resumo-final th, .resumo-final td { 
-        border-color: #333; 
-        padding: 4px 8px; 
-      }
-      .lucro-incluso { display: none !important; }
-      .termo-garantia-print,
-      #observacoesPrint {
-        display: block !important;
-        margin-top: 15px;
-        font-size: 0.95rem;
-      }
-      #observacoesPrint p,
-      .termo-garantia-print p {
-        margin: 5px 0;
-        white-space: pre-wrap;
-      }
-    }
-
-    /* Modal de Histórico */
-    #modalHistorico {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
-      z-index: 10000;
-    }
-    #modalHistorico .content {
-      background: white;
-      margin: 40px auto;
-      padding: 20px;
-      max-width: 800px;
-      max-height: 80vh;
-      overflow-y: auto;
-      border-radius: 8px;
-    }
-    #modalHistorico h2 { margin-top: 0; }
-    #modalHistorico ul { list-style: none; padding: 0; }
-    #modalHistorico li { 
-      padding: 10px 0; 
-      border-bottom: 1px solid #eee; 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: flex-start; 
-    }
-    #modalHistorico .close { float: right; cursor: pointer; font-weight: bold; }
-    #modalHistorico .modal-actions { margin-top: 15px; text-align: right; }
   </style>
 </head>
 <body>
@@ -171,8 +56,7 @@
 
   <div class="section">
     <h3>Serviços (selecione os desejados)</h3>
-    <div id="servicosContainer">
-    </div>
+    <div id="servicosContainer"></div>
   </div>
 
   <div class="section">
@@ -199,50 +83,24 @@
     <label>Descrição para "Outros"</label>
     <input id="outrosDesc" type="text" placeholder="Descreva peça/serviço se usar o campo 'Outros'"/>
   </div>
-  
-  <div class="section ocultar-print">
-      <label>Observações / Condições de Serviço (não aparece no resumo final)</label>
-      <textarea id="observacoes" rows="3" placeholder="Ex: Garantia de 90 dias para serviço; Prazo de 3 dias úteis."></textarea>
-  </div>
 
   <div class="section resumo-final">
-    <div class="cabecalho-print" id="cabecalhoPrint"></div>
-
     <div class="tabela-cobranca">
-        <h3>Itens Orçados</h3>
-        <table id="cobrancaTable">
-            <thead>
-                <tr><th>Item</th><th class="right">Valor (R$)</th></tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+      <h3>Itens Orçados</h3>
+      <table id="cobrancaTable">
+        <thead><tr><th>Item</th><th class="right">Valor (R$)</th></tr></thead>
+        <tbody></tbody>
+      </table>
     </div>
 
-    <label>Resumo Final</label>
     <table>
       <tbody>
         <tr>
-          <td>
-            Total (Serviços + Peças 
-            <span class="lucro-incluso">com lucro incluso</span>)
-          </td>
+          <td>Total</td>
           <td class="right" id="custo"><strong>R$ 0,00</strong></td>
         </tr>
       </tbody>
     </table>
-    
-    <div id="observacoesPrint" style="margin-top: 15px; font-size: 0.95rem; display: none;">
-        <p style="font-weight: bold;">Observações:</p>
-        <p id="obsContent" style="white-space: pre-wrap; margin-top: 5px;"></p>
-    </div>
-
-    <div class="termo-garantia-print" style="margin-top: 15px; font-size: 0.95rem;">
-      <p style="font-weight: bold;">Garantia:</p>
-      <p style="margin-top: 5px; white-space: pre-wrap;">
-        Garantia de 90 dias para o serviço executado. Peças com garantia do fabricante. 
-        Não cobrimos danos por mau uso, água, quedas ou interferência de terceiros.
-      </p>
-    </div>
 
     <div style="margin-top:12px">
       <button class="btn" onclick="recalcular()">Calcular</button>
@@ -251,355 +109,10 @@
       <button class="btn secondary" onclick="window.print()">Gerar PDF / Imprimir</button>
       <button id="btnSair" class="btn secondary" style="background:#dc3545; margin-left: 8px;">Sair</button>
     </div>
-
-    <footer class="ocultar-print">
-      Dica: preencha o campo "Cliente" e "Descrição do aparelho" antes de gerar o PDF. Use "Salvar como PDF" no diálogo de impressão.
-    </footer>
   </div>
 
-  <div id="modalHistorico">
-    <div class="content">
-      <span class="close" onclick="fecharHistorico()">&times;</span>
-      <h2>Histórico de Orçamentos</h2>
-      <ul id="listaHistorico"></ul>
-      <p style="font-size:0.9em; color:#666;">Clique em um orçamento para carregá-lo.</p>
-      
-      <div class="modal-actions">
-        <button class="btn export" onclick="exportarHistorico()">Exportar (.json)</button>
-      </div>
-    </div>
-  </div>
-
-<script>
-// Preços sugeridos para serviços (serão substituídos pelo perfil do usuário)
-const PRECOS_SUGERIDOS = {
-  "Limpeza interna e troca de pasta térmica": 100,
-  "Formatação": 60,
-  "formatação + Backup": 100,
-  "Reballing": 250,
-  "Atualização de BIOS": 40,
-  "Diagnóstico": 30,
-  "Troca de teclado (mão de obra)": 90,
-  "Instalação de drivers": 30
-};
-
-function formatBR(value){
-  const numericValue = parseFloat(value) || 0;
-  return numericValue.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
-}
-
-function sumValues(selector){
-  const nodes = document.querySelectorAll(selector);
-  return Array.from(nodes).map(i=>parseFloat(i.value||0)).reduce((a,b)=>a+b,0);
-}
-
-function renderizarServicos() {
-  console.log("Renderizando serviços...");
-  const container = document.getElementById('servicosContainer');
-  container.innerHTML = '';
-  for (const [servico, preco] of Object.entries(PRECOS_SUGERIDOS)) {
-    const div = document.createElement('div');
-    div.className = 'servico-item';
-    div.innerHTML = `
-      <input type="checkbox" id="chk_${servico.replace(/\s+/g, '_')}" data-item="${servico}" />
-      <label for="chk_${servico.replace(/\s+/g, '_')}">${servico}</label>
-      <input type="number" class="valor servico" data-item="${servico}" min="0" step="0.01" value="${preco}" disabled />
-    `;
-    container.appendChild(div);
-  }
-
-  document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(cb => {
-    cb.addEventListener('change', function() {
-      const input = this.closest('.servico-item').querySelector('input[type="number"]');
-      input.disabled = !this.checked;
-      if (!this.checked) input.value = 0;
-      recalcular();
-    });
-  });
-
-  document.querySelectorAll('#servicosContainer input[type="number"]').forEach(input => {
-    input.addEventListener('input', recalcular);
-  });
-}
-
-function getItensCobrados(){
-    const itens = [];
-
-    const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
-    const valorMaoObra = parseFloat(document.getElementById('valorMaoObra').value || 0);
-    if (incluirMaoObra && valorMaoObra > 0) {
-        itens.push({ nome: "Mão de Obra", valor: valorMaoObra });
-    }
-
-    document.querySelectorAll('#servicosContainer .servico-item').forEach(itemDiv => {
-        const checkbox = itemDiv.querySelector('input[type="checkbox"]');
-        const input = itemDiv.querySelector('input[type="number"]');
-        if (checkbox.checked) {
-            const valor = parseFloat(input.value || 0);
-            if (valor > 0) {
-                const nome = input.getAttribute('data-item');
-                itens.push({ nome, valor });
-            }
-        }
-    });
-
-    document.querySelectorAll('input.peca').forEach(input => {
-        const valor = parseFloat(input.value || 0);
-        if (valor > 0) {
-            const item = input.getAttribute('data-item');
-            let nome = item;
-            const valorFinal = valor * 1.25;
-
-            if (item === 'Outros' && document.getElementById('outrosDesc').value.trim() !== "") {
-                nome = "Outros (" + document.getElementById('outrosDesc').value.trim() + ")";
-            }
-
-            itens.push({ nome: nome, valor: valorFinal });
-        }
-    });
-
-    return itens;
-}
-
-function recalcular(){
-  const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
-  const valorMaoObra = incluirMaoObra ? parseFloat(document.getElementById('valorMaoObra').value || 0) : 0;
-  document.getElementById('valorMaoObra').disabled = !incluirMaoObra;
-
-  let totalServicos = 0;
-  document.querySelectorAll('#servicosContainer .servico-item').forEach(itemDiv => {
-    const checkbox = itemDiv.querySelector('input[type="checkbox"]');
-    const input = itemDiv.querySelector('input[type="number"]');
-    if (checkbox.checked) {
-      totalServicos += parseFloat(input.value || 0);
-    }
-  });
-
-  const totalPecas = sumValues('input.peca') * 1.25;
-  const custo = totalServicos + valorMaoObra + totalPecas;
-  document.getElementById('custo').innerText = 'R$ ' + formatBR(custo);
-
-  const tabelaCorpo = document.querySelector('#cobrancaTable tbody');
-  tabelaCorpo.innerHTML = '';
-  const itens = getItensCobrados();
-  if (itens.length > 0) {
-      itens.forEach(item => {
-          const row = tabelaCorpo.insertRow();
-          row.insertCell().innerText = item.nome;
-          const valorCell = row.insertCell();
-          valorCell.className = 'right';
-          valorCell.innerText = 'R$ ' + formatBR(item.valor);
-      });
-  } else {
-      const row = tabelaCorpo.insertRow();
-      row.insertCell().innerText = 'Nenhum item/serviço cobrado.';
-      row.insertCell().colSpan = 2;
-      row.cells[0].style.textAlign = 'center';
-  }
-
-  const obsText = document.getElementById('observacoes').value.trim();
-  document.getElementById('obsContent').innerText = obsText;
-  document.getElementById('observacoesPrint').style.display = obsText ? 'block' : 'none';
-
-  // O cabeçalho do PDF será atualizado pelo módulo Firebase
-}
-
-function attachListeners(){
-  document.querySelectorAll('input.peca, #outrosDesc, #observacoes').forEach(el => {
-    el.addEventListener('input', recalcular);
-  });
-  document.getElementById('incluirMaoObra').addEventListener('change', recalcular);
-  document.getElementById('valorMaoObra').addEventListener('input', recalcular);
-}
-
-function fecharHistorico() {
-  document.getElementById('modalHistorico').style.display = 'none';
-}
-
-function exportarHistorico() {
-  alert('A exportação local foi desativada. Seus dados estão salvos no Firebase e sincronizados.');
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  console.log("DOM carregado. Iniciando renderização...");
-  renderizarServicos();
-  attachListeners();
-  recalcular();
-});
-
-window.addEventListener('keydown', function(e){
-  if((e.ctrlKey||e.metaKey) && e.key === 's'){
-    e.preventDefault();
-    salvarOrcamento();
-  }
-});
-</script>
-
-<script type="module">
-  import { salvarOrcamentoFirestore, carregarOrcamentosOnce, excluirOrcamentoFirestore, getPerfilUsuario } from './orcamento.js';
-
-  window.salvarOrcamento = async function() {
-    try {
-      const incluirMaoObra = document.getElementById('incluirMaoObra').checked;
-      const valorMaoObra = incluirMaoObra ? parseFloat(document.getElementById('valorMaoObra').value || 0) : 0;
-      
-      const itens = getItensCobrados();
-      const totalTexto = document.getElementById('custo').innerText;
-      const total = parseFloat(totalTexto.replace(/\D/g, '')) / 100;
-
-      const orcamento = {
-         new Date().toLocaleString('pt-BR'),
-        cliente: document.getElementById('cliente').value.trim(),
-        aparelho: document.getElementById('descricaoAparelho').value.trim(),
-        maoObraIncluida: incluirMaoObra,
-        valorMaoObra: valorMaoObra,
-        itens: itens,
-        total: total,
-        observacoes: document.getElementById('observacoes').value.trim()
-      };
-
-      await salvarOrcamentoFirestore(orcamento);
-      alert('Orçamento salvo no Firebase com sucesso!');
-      recalcular();
-    } catch (err) {
-      console.error('Erro ao salvar no Firebase:', err);
-      alert('Erro ao salvar: ' + (err.message || 'verifique o console (F12)'));
-    }
-  };
-
-  window.mostrarHistorico = async function() {
-    try {
-      const orcamentos = await carregarOrcamentosOnce();
-      const lista = document.getElementById('listaHistorico');
-      lista.innerHTML = '';
-
-      if (orcamentos.length === 0) {
-        lista.innerHTML = '<li>Nenhum orçamento salvo ainda.</li>';
-      } else {
-        orcamentos.forEach(orc => {
-          const li = document.createElement('li');
-          li.style.display = 'flex';
-          li.style.justifyContent = 'space-between';
-          li.style.alignItems = 'flex-start';
-
-          const info = document.createElement('div');
-          info.style.flex = '1';
-          info.innerHTML = `
-            <strong>${orc.cliente || 'Cliente não informado'}</strong> - ${orc.aparelho || 'Sem descrição'}<br>
-            <small>${orc.data || new Date(orc.createdAt).toLocaleString('pt-BR')}</small>
-          `;
-          info.style.cursor = 'pointer';
-          info.onclick = () => carregarDoFirestore(orc);
-
-          const btnExcluir = document.createElement('button');
-          btnExcluir.className = 'btn danger';
-          btnExcluir.style.padding = '4px 8px';
-          btnExcluir.style.fontSize = '0.8rem';
-          btnExcluir.style.marginLeft = '10px';
-          btnExcluir.textContent = '🗑️';
-          btnExcluir.title = 'Excluir este orçamento';
-          btnExcluir.onclick = (e) => {
-            e.stopPropagation();
-            if (confirm(`Excluir orçamento de "${orc.cliente || 'Cliente não informado'}"?`)) {
-              excluirOrcamentoFirestore(orc.id).then(() => {
-                mostrarHistorico();
-                alert('Orçamento excluído!');
-              }).catch(err => {
-                console.error(err);
-                alert('Erro ao excluir');
-              });
-            }
-          };
-
-          li.appendChild(info);
-          li.appendChild(btnExcluir);
-          lista.appendChild(li);
-        });
-      }
-      document.getElementById('modalHistorico').style.display = 'block';
-    } catch (err) {
-      console.error('Erro ao carregar histórico do Firebase:', err);
-      alert('Erro ao carregar histórico: ' + (err.message || 'verifique o console'));
-    }
-  };
-
-  window.carregarDoFirestore = function(orc) {
-    document.getElementById('cliente').value = orc.cliente || '';
-    document.getElementById('descricaoAparelho').value = orc.aparelho || '';
-    document.getElementById('observacoes').value = orc.observacoes || '';
-
-    const maoObraCheck = document.getElementById('incluirMaoObra');
-    maoObraCheck.checked = orc.maoObraIncluida === true;
-    document.getElementById('valorMaoObra').value = orc.valorMaoObra || 120;
-    document.getElementById('valorMaoObra').disabled = !maoObraCheck.checked;
-
-    document.getElementById('outrosDesc').value = '';
-    document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(cb => {
-      cb.checked = false;
-      const input = cb.closest('.servico-item').querySelector('input[type="number"]');
-      input.disabled = true;
-      input.value = window.PRECOS_SUGERIDOS[cb.getAttribute('data-item')] || 0;
-    });
-    document.querySelectorAll('input.peca').forEach(input => {
-      input.value = 0;
-    });
-
-    if (orc.itens && Array.isArray(orc.itens)) {
-      orc.itens.forEach(item => {
-        if (item.nome === "Mão de Obra") return;
-
-        const servicoCheckbox = document.querySelector(`#servicosContainer input[data-item="${item.nome}"][type="checkbox"]`);
-        if (servicoCheckbox) {
-          servicoCheckbox.checked = true;
-          const input = servicoCheckbox.closest('.servico-item').querySelector('input[type="number"]');
-          input.disabled = false;
-          input.value = item.valor;
-        } else {
-          let nomePeca = item.nome;
-          if (item.nome.includes('Outros (')) {
-            const match = item.nome.match(/Outros \((.+)\)/);
-            if (match) {
-              document.getElementById('outrosDesc').value = match[1];
-              nomePeca = 'Outros';
-            }
-          }
-          const pecaInput = document.querySelector(`input.peca[data-item="${nomePeca}"]`);
-          if (pecaInput) {
-            pecaInput.value = (item.valor / 1.25).toFixed(2);
-          }
-        }
-      });
-    }
-
-    fecharHistorico();
-    recalcular();
-  };
-
-  function atualizarCabecalhoPDF() {
-    const perfil = getPerfilUsuario();
-    const dataAtual = new Date().toLocaleString('pt-BR');
-    const cliente = document.getElementById('cliente').value.trim() || 'Não informado';
-    const aparelho = document.getElementById('descricaoAparelho').value.trim() || 'Não informado';
-    
-    let cabecalho = `<h1>${perfil?.empresa || 'Orçamento Técnico'}</h1>`;
-    if (perfil?.cnpj) cabecalho += `<p>CNPJ: ${perfil.cnpj}</p>`;
-    if (perfil?.telefone) cabecalho += `<p>Contato: ${perfil.telefone}</p>`;
-    cabecalho += `
-      <p><strong>Cliente:</strong> ${cliente}</p>
-      <p><strong>Aparelho:</strong> ${aparelho}</p>
-      <p><strong>Data:</strong> ${dataAtual}</p>
-    `;
-    
-    document.getElementById('cabecalhoPrint').innerHTML = cabecalho;
-  }
-
-  const recalcularOriginal = window.recalcular;
-  window.recalcular = function() {
-    recalcularOriginal();
-    atualizarCabecalhoPDF();
-  };
-</script>
-
-<script type="module" src="./orcamento.js"></script>
+  <script type="module" src="./firebase.js"></script>
+  <script type="module" src="./orcamento.js"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
