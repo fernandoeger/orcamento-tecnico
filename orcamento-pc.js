@@ -140,29 +140,80 @@ function salvarOrcamento(){
 }
 
 function mostrarHistorico(){
-  listaHistorico.innerHTML = '';
-  const h = getHistorico();
+  const modal = document.getElementById('modalHistorico');
+  const ul = document.getElementById('listaHistorico');
 
-  if (h.length === 0) {
-    listaHistorico.innerHTML = '<li>Nenhum orçamento salvo.</li>';
+  ul.innerHTML = '';
+  const h = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+
+  if(h.length === 0){
+    ul.innerHTML = '<li>Nenhum orçamento salvo.</li>';
+    modal.style.display = 'block';
+    return;
   }
 
-  h.forEach(o => {
-    const total = o.itens.reduce((s, i) => s + i.valor, 0);
+  h.forEach((o, index) => {
+    const total = o.itens.reduce((s, x) => s + x.valor, 0);
+
     const li = document.createElement('li');
+    li.style.marginBottom = '12px';
+
     li.innerHTML = `
-      <strong>${o.cliente || 'Cliente'}</strong><br>
+      <strong>${o.cliente || 'Cliente não informado'}</strong><br>
       ${o.aparelho || ''}<br>
-      Total: R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+      <small>${o.data}</small><br>
+      <strong>Total:</strong> R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits:2})}
     `;
-    listaHistorico.appendChild(li);
+
+    // BOTÃO PAGAMENTO
+    const btnPago = document.createElement('button');
+    btnPago.textContent = o.pago ? '✔️ Pago' : '💰 Confirmar pagamento';
+    btnPago.disabled = o.pago;
+    btnPago.style.marginRight = '6px';
+
+    btnPago.onclick = () => {
+      if(o.pago) return;
+      if(!confirm('Confirmar pagamento e registrar no Caixa?')) return;
+
+      const caixa = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
+
+      caixa.unshift({
+        id: Date.now(),
+        tipo: 'entrada',
+        descricao: `Pagamento orçamento - ${o.cliente || 'Cliente'}`,
+        valor: total,
+        data: new Date().toLocaleString('pt-BR')
+      });
+
+      localStorage.setItem('livroCaixa', JSON.stringify(caixa));
+
+      o.pago = true;
+      h[index] = o;
+      localStorage.setItem('orcamentos', JSON.stringify(h));
+
+      alert('Pagamento registrado no Livro Caixa');
+      mostrarHistorico();
+    };
+
+    // BOTÃO EXCLUIR
+    const btnExcluir = document.createElement('button');
+    btnExcluir.textContent = '🗑️';
+    btnExcluir.onclick = () => {
+      if(confirm('Excluir orçamento?')){
+        h.splice(index, 1);
+        localStorage.setItem('orcamentos', JSON.stringify(h));
+        mostrarHistorico();
+      }
+    };
+
+    li.appendChild(document.createElement('br'));
+    li.appendChild(btnPago);
+    li.appendChild(btnExcluir);
+
+    ul.appendChild(li);
   });
 
-  modalHistorico.style.display = 'block';
-}
-
-function fecharHistorico(){
-  modalHistorico.style.display = 'none';
+  modal.style.display = 'block';
 }
 
 // =======================
