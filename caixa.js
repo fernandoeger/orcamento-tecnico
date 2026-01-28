@@ -87,16 +87,49 @@ function renderLista(lista) {
     return;
   }
 
-  lista.forEach(i => {
+  lista.forEach((i, index) => {
     const li = document.createElement('li');
-    li.innerHTML = `
+    li.style.display = 'flex';
+    li.style.justifyContent = 'space-between';
+    li.style.alignItems = 'flex-start';
+    li.style.gap = '10px';
+
+    const info = document.createElement('div');
+    info.innerHTML = `
       <strong>${i.tipo === 'entrada' ? '➕ Entrada' : '➖ Saída'}</strong>
       — ${i.descricao}<br>
       <small>${i.data}</small>
-      <span style="float:right">
-        R$ ${Number(i.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-      </span>
     `;
+
+    const valor = document.createElement('div');
+    valor.style.textAlign = 'right';
+    valor.innerHTML = `
+      R$ ${Number(i.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+    `;
+
+    const btnExcluir = document.createElement('button');
+    btnExcluir.textContent = '🗑️';
+    btnExcluir.title = 'Excluir movimento';
+    btnExcluir.style.marginLeft = '8px';
+    btnExcluir.style.background = '#dc3545';
+    btnExcluir.style.color = '#fff';
+    btnExcluir.style.border = 'none';
+    btnExcluir.style.borderRadius = '6px';
+    btnExcluir.style.cursor = 'pointer';
+
+    btnExcluir.onclick = () => {
+      if (!confirm('Deseja excluir este movimento?')) return;
+
+      const caixa = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
+      caixa.splice(index, 1);
+      localStorage.setItem('livroCaixa', JSON.stringify(caixa));
+      atualizarResumoFirestore(caixa);
+    };
+
+    valor.appendChild(btnExcluir);
+
+    li.appendChild(info);
+    li.appendChild(valor);
     ul.appendChild(li);
   });
 }
