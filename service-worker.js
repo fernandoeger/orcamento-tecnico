@@ -1,7 +1,8 @@
-const CACHE_NAME = 'orcamento-cache-v6';
+const CACHE_NAME = 'orcamento-cache-v7';
 
 const ASSETS = [
   './index.html',
+  './impressora.html',
   './caixa.html',
   './caixa.js',
   './manifest.json',
