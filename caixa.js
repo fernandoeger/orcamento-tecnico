@@ -70,17 +70,24 @@ function renderizarLista(caixa) {
   }
 
   caixa.forEach(item => {
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <strong>${item.tipo === 'entrada' ? '➕ Entrada' : '➖ Saída'}</strong>
-      — ${item.descricao}<br>
-      <small>${item.data}</small>
-      <span style="float:right">
-        R$ ${item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-      </span>
-    `;
-    ul.appendChild(li);
-  });
+  const li = document.createElement('li');
+
+  li.innerHTML = `
+    <strong>${item.tipo === 'entrada' ? '➕ Entrada' : '➖ Saída'}</strong>
+    — ${item.descricao}<br>
+    <small>${item.data}</small>
+    <span style="float:right">
+      R$ ${item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+      <button 
+        style="margin-left:8px; background:#dc3545; color:#fff; border:none; border-radius:4px; padding:2px 6px; cursor:pointer;"
+        onclick="excluirMovimento(${item.id})"
+        title="Excluir movimento"
+      >🗑️</button>
+    </span>
+  `;
+
+  ul.appendChild(li);
+});
 }
 
 // ================== AUTO ATUALIZAÇÃO ==================
