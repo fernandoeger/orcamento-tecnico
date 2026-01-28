@@ -8,7 +8,7 @@ function salvarCaixa(lista) {
 }
 
 // ================== SALVAR MOVIMENTO MANUAL ==================
-function salvarMovimento() {
+async function salvarMovimento() {
   const tipo = document.getElementById('tipo').value;
   const descricao = document.getElementById('descricao').value.trim();
   const valor = parseFloat(document.getElementById('valor').value);
@@ -19,16 +19,24 @@ function salvarMovimento() {
   }
 
   const movimento = {
-    id: Date.now(),
     tipo,
     descricao,
     valor,
-    data: new Date().toLocaleString('pt-BR')
+    data: new Date().toLocaleString('pt-BR'),
+    criadoEm: Date.now()
   };
 
-  const caixa = getCaixa();
-  caixa.unshift(movimento);
-  salvarCaixa(caixa);
+  // ===== LOCAL (offline) =====
+  const caixaLocal = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
+  caixaLocal.unshift(movimento);
+  localStorage.setItem('livroCaixa', JSON.stringify(caixaLocal));
+
+  // ===== ONLINE (Firestore) =====
+  try {
+    await addDoc(collection(window.db, 'livroCaixa'), movimento);
+  } catch (e) {
+    console.warn('Sem internet — salvo apenas localmente');
+  }
 
   document.getElementById('descricao').value = '';
   document.getElementById('valor').value = '';
