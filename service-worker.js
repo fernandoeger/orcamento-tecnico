@@ -3,12 +3,12 @@ const CACHE_NAME = 'orcamento-cache-v2';
 const ASSETS = [
   './index.html',
   './manifest.json',
+  './orcamento.js',
   './icon-192.png',
   './icon-512.png',
   './icon-1024.png'
 ];
 
-// Instala e salva arquivos no cache
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
@@ -16,7 +16,6 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
-// Ativa e limpa caches antigos
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -32,7 +31,6 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Intercepta requisições (offline first)
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request).then(response => {
