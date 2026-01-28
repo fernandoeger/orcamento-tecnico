@@ -539,6 +539,46 @@ function mostrarHistorico() {
 
       li.appendChild(info);
       li.appendChild(btnExcluir);
+      // ===== STATUS =====
+const status = document.createElement('div');
+status.className = 'small';
+status.style.marginTop = '4px';
+status.innerHTML = `
+  Status:
+  ${orc.pecasCompradas ? '🧺 Peças compradas' : '📝 Orçado'}
+  ${orc.pago ? ' | 💰 Pago' : ''}
+`;
+li.appendChild(status);
+
+// ===== BOTÃO COMPRAR PEÇAS =====
+const btnPecas = document.createElement('button');
+btnPecas.className = 'btn secondary';
+btnPecas.style.marginLeft = '6px';
+btnPecas.textContent = orc.pecasCompradas
+  ? '✔️ Peças compradas'
+  : '🧺 Comprar peças';
+btnPecas.disabled = orc.pecasCompradas;
+
+btnPecas.onclick = (e) => {
+  e.stopPropagation();
+  confirmarCompraPecas(orc.id);
+};
+li.appendChild(btnPecas);
+
+// ===== BOTÃO CONFIRMAR PAGAMENTO =====
+const btnPago = document.createElement('button');
+btnPago.className = 'btn';
+btnPago.style.marginLeft = '6px';
+btnPago.textContent = orc.pago
+  ? '✔️ Pago'
+  : '💰 Confirmar pagamento';
+btnPago.disabled = orc.pago;
+
+btnPago.onclick = (e) => {
+  e.stopPropagation();
+  confirmarPagamento(orc.id);
+};
+li.appendChild(btnPago);
       lista.appendChild(li);
     });
   }
