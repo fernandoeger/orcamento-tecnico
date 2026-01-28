@@ -308,6 +308,23 @@ function confirmarPagamento(id){
 
 document.addEventListener('DOMContentLoaded',renderizarServicos);
 </script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 
+  const firebaseConfig = {
+    apiKey: "AIzaSyBOx0NOGFrMMznnJkph3DDO7cf8z1ObAdk",
+    authDomain: "orcamento-tecnico-cbf90.firebaseapp.com",
+    projectId: "orcamento-tecnico-cbf90",
+    storageBucket: "orcamento-tecnico-cbf90.firebasestorage.app",
+    messagingSenderId: "512091779902",
+    appId: "1:512091779902:web:37c19342cd49418a68f26f"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.db = db; // 👈 MUITO IMPORTANTE
+</script>
 </body>
 </html>
