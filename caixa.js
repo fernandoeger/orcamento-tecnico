@@ -1,4 +1,4 @@
-// ================== FIRESTORE IMPORT ==================
+// ================== FIRESTORE ==================
 import {
   collection,
   addDoc,
@@ -7,86 +7,63 @@ import {
   orderBy
 } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 
-// ================== STORAGE LOCAL ==================
-function getCaixa() {
+// ================== LOCAL STORAGE ==================
+function getLocal() {
   return JSON.parse(localStorage.getItem('livroCaixa') || '[]');
 }
 
-function salvarCaixa(lista) {
+function setLocal(lista) {
   localStorage.setItem('livroCaixa', JSON.stringify(lista));
 }
 
 // ================== SALVAR MOVIMENTO ==================
-async function salvarMovimento() {
+export async function salvarMovimento() {
   const tipo = document.getElementById('tipo').value;
   const descricao = document.getElementById('descricao').value.trim();
-  const valor = parseFloat(document.getElementById('valor').value);
+  const valor = Number(document.getElementById('valor').value);
 
-  if (!descricao || !valor || valor <= 0) {
+  if (!descricao || valor <= 0) {
     alert('Preencha descrição e valor corretamente.');
     return;
   }
 
   const movimento = {
-    tipo,
+    id: Date.now().toString(), // id único
+    tipo,                      // entrada | saida
     descricao,
     valor,
     data: new Date().toLocaleString('pt-BR'),
     criadoEm: Date.now()
   };
 
-  // LOCAL (offline)
-  const local = getCaixa();
+  // 👉 salva LOCAL primeiro (nunca perde)
+  const local = getLocal();
   local.unshift(movimento);
-  salvarCaixa(local);
+  setLocal(local);
 
-  // ONLINE (Firestore)
-  if (window.db) {
-    try {
-      await addDoc(collection(window.db, 'livroCaixa'), movimento);
-    } catch (e) {
-      console.warn('Firestore indisponível, salvo localmente');
-    }
+  // 👉 tenta salvar ONLINE
+  try {
+    await addDoc(collection(window.db, 'livroCaixa'), movimento);
+  } catch (e) {
+    console.warn('Offline — salvo apenas localmente');
   }
 
   document.getElementById('descricao').value = '';
   document.getElementById('valor').value = '';
 
-  atualizarTela(local);
+  renderTudo(local);
 }
+
+window.salvarMovimento = salvarMovimento;
 
 // ================== RENDER ==================
-function renderizarLista(caixa) {
-  const ul = document.getElementById('lista');
-  ul.innerHTML = '';
-
-  if (caixa.length === 0) {
-    ul.innerHTML = '<li>Nenhum movimento registrado.</li>';
-    return;
-  }
-
-  caixa.forEach(item => {
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <strong>${item.tipo === 'entrada' ? '➕ Entrada' : '➖ Saída'}</strong>
-      — ${item.descricao}<br>
-      <small>${item.data}</small>
-      <span style="float:right">
-        R$ ${Number(item.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})}
-      </span>
-    `;
-    ul.appendChild(li);
-  });
-}
-
-// ================== RESUMO ==================
-function atualizarTela(caixa) {
+function renderTudo(lista) {
   let entradas = 0;
   let saidas = 0;
 
-  caixa.forEach(item => {
-    if (item.tipo === 'entrada') entradas += Number(item.valor);
-    else if (item.tipo === 'saida') saidas += Number(item.valor);
+  lista.forEach(i => {
+    if (i.tipo === 'entrada') entradas += Number(i.valor);
+    if (i.tipo === 'saida') saidas += Number(i.valor);
   });
 
   document.getElementById('entradas').innerText =
@@ -98,16 +75,39 @@ function atualizarTela(caixa) {
   document.getElementById('saldo').innerText =
     (entradas - saidas).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
-  renderizarLista(caixa);
+  renderLista(lista);
 }
 
-// ================== LEITURA FIRESTORE ==================
-function iniciarLeituraCaixa() {
-  const local = getCaixa();
-  atualizarTela(local);
+function renderLista(lista) {
+  const ul = document.getElementById('lista');
+  ul.innerHTML = '';
 
-  if (!window.db) return;
+  if (lista.length === 0) {
+    ul.innerHTML = '<li>Nenhum movimento registrado.</li>';
+    return;
+  }
 
+  lista.forEach(i => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <strong>${i.tipo === 'entrada' ? '➕ Entrada' : '➖ Saída'}</strong>
+      — ${i.descricao}<br>
+      <small>${i.data}</small>
+      <span style="float:right">
+        R$ ${Number(i.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+      </span>
+    `;
+    ul.appendChild(li);
+  });
+}
+
+// ================== SINCRONIZAÇÃO ==================
+function iniciarSync() {
+  // 1️⃣ mostra o que já existe local
+  const local = getLocal();
+  renderTudo(local);
+
+  // 2️⃣ escuta o Firestore
   const q = query(
     collection(window.db, 'livroCaixa'),
     orderBy('criadoEm', 'desc')
@@ -119,20 +119,21 @@ function iniciarLeituraCaixa() {
       online.push(doc.data());
     });
 
+    // junta SEM duplicar
     const combinado = [...online];
 
     local.forEach(l => {
-      if (!online.some(o => o.criadoEm === l.criadoEm)) {
+      if (!online.some(o => o.id === l.id)) {
         combinado.push(l);
       }
     });
 
-    atualizarTela(combinado);
+    // ordena do mais novo pro mais antigo
+    combinado.sort((a, b) => b.criadoEm - a.criadoEm);
+
+    setLocal(combinado);
+    renderTudo(combinado);
   });
 }
 
-// ================== EVENTOS ==================
-document.addEventListener('DOMContentLoaded', iniciarLeituraCaixa);
-
-// ================== EXPOR PARA HTML ==================
-window.salvarMovimento = salvarMovimento;
+document.addEventListener('DOMContentLoaded', iniciarSync);
