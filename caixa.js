@@ -36,24 +36,26 @@ async function salvarMovimento() {
   };
 
   // LOCAL (offline)
-  const caixaLocal = getCaixa();
-  caixaLocal.unshift(movimento);
-  salvarCaixa(caixaLocal);
+  const local = getCaixa();
+  local.unshift(movimento);
+  salvarCaixa(local);
 
   // ONLINE (Firestore)
-  try {
-    await addDoc(collection(window.db, 'livroCaixa'), movimento);
-  } catch (e) {
-    console.warn('Sem internet — salvo apenas localmente');
+  if (window.db) {
+    try {
+      await addDoc(collection(window.db, 'livroCaixa'), movimento);
+    } catch (e) {
+      console.warn('Firestore indisponível, salvo localmente');
+    }
   }
 
   document.getElementById('descricao').value = '';
   document.getElementById('valor').value = '';
 
-  atualizarResumoFirestore(caixaLocal);
+  atualizarTela(local);
 }
 
-// ================== LISTAGEM ==================
+// ================== RENDER ==================
 function renderizarLista(caixa) {
   const ul = document.getElementById('lista');
   ul.innerHTML = '';
@@ -65,7 +67,6 @@ function renderizarLista(caixa) {
 
   caixa.forEach(item => {
     const li = document.createElement('li');
-
     li.innerHTML = `
       <strong>${item.tipo === 'entrada' ? '➕ Entrada' : '➖ Saída'}</strong>
       — ${item.descricao}<br>
@@ -74,13 +75,12 @@ function renderizarLista(caixa) {
         R$ ${Number(item.valor).toLocaleString('pt-BR',{minimumFractionDigits:2})}
       </span>
     `;
-
     ul.appendChild(li);
   });
 }
 
 // ================== RESUMO ==================
-function atualizarResumoFirestore(caixa) {
+function atualizarTela(caixa) {
   let entradas = 0;
   let saidas = 0;
 
@@ -101,13 +101,13 @@ function atualizarResumoFirestore(caixa) {
   renderizarLista(caixa);
 }
 
-// ================== LEITURA FIRESTORE + LOCAL ==================
+// ================== LEITURA FIRESTORE ==================
 function iniciarLeituraCaixa() {
-  // dados locais primeiro
   const local = getCaixa();
-  atualizarResumoFirestore(local);
+  atualizarTela(local);
 
-  // dados online
+  if (!window.db) return;
+
   const q = query(
     collection(window.db, 'livroCaixa'),
     orderBy('criadoEm', 'desc')
@@ -116,7 +116,7 @@ function iniciarLeituraCaixa() {
   onSnapshot(q, snapshot => {
     const online = [];
     snapshot.forEach(doc => {
-      online.push({ id: doc.id, ...doc.data() });
+      online.push(doc.data());
     });
 
     const combinado = [...online];
@@ -127,15 +127,12 @@ function iniciarLeituraCaixa() {
       }
     });
 
-    atualizarResumoFirestore(combinado);
+    atualizarTela(combinado);
   });
 }
 
 // ================== EVENTOS ==================
 document.addEventListener('DOMContentLoaded', iniciarLeituraCaixa);
 
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) {
-    atualizarResumoFirestore(getCaixa());
-  }
-});
+// ================== EXPOR PARA HTML ==================
+window.salvarMovimento = salvarMovimento;
