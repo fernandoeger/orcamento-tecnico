@@ -277,6 +277,60 @@ function confirmarPagamento(id){
 }
 
 document.addEventListener('DOMContentLoaded', renderizarServicos);
+<script>
+function gerarPDF(){
+  document.querySelector('.resumo-final')?.remove();
+
+  const resumo = document.createElement('div');
+  resumo.className = 'resumo-final';
+
+  let total = 0;
+  let linhas = '';
+
+  document.querySelectorAll('.linha-servico').forEach(l=>{
+    if(l.children[0].checked){
+      const nome = l.children[1].innerText;
+      const valor = Number(l.children[2].value || 0);
+      total += valor;
+      linhas += `
+        <tr>
+          <td>${nome}</td>
+          <td style="text-align:right">R$ ${valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+        </tr>`;
+    }
+  });
+
+  resumo.innerHTML = `
+    <h2>Orçamento de Impressora</h2>
+    <p><strong>Cliente:</strong> ${cliente.value || '-'}</p>
+    <p><strong>Impressora:</strong> ${modelo.value || '-'}</p>
+    <p><strong>Data:</strong> ${new Date().toLocaleString('pt-BR')}</p>
+
+    <table style="width:100%;border-collapse:collapse;margin-top:10px">
+      <thead>
+        <tr>
+          <th style="border-bottom:1px solid #000;text-align:left">Serviço</th>
+          <th style="border-bottom:1px solid #000;text-align:right">Valor</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${linhas || '<tr><td colspan="2">Nenhum serviço selecionado</td></tr>'}
+      </tbody>
+    </table>
+
+    <h3 style="text-align:right;margin-top:10px">
+      Total: R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}
+    </h3>
+
+    <p style="margin-top:20px">
+      <strong>Garantia:</strong><br>
+      Garantia de 90 dias para o serviço executado.
+    </p>
+  `;
+
+  document.body.appendChild(resumo);
+  window.print();
+}
 </script>
 
 </body>
