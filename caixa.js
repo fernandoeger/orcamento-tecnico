@@ -5,8 +5,8 @@ import {
   onSnapshot,
   query,
   orderBy,
-  doc,
-  deleteDoc
+  deleteDoc,
+  doc
 } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 
 // ================== LOCAL STORAGE ==================
@@ -19,7 +19,7 @@ function setLocal(lista) {
 }
 
 // ================== SALVAR MOVIMENTO ==================
-export async function salvarMovimento() {
+async function salvarMovimento() {
   const tipo = document.getElementById('tipo').value;
   const descricao = document.getElementById('descricao').value.trim();
   const valor = Number(document.getElementById('valor').value);
@@ -30,52 +30,39 @@ export async function salvarMovimento() {
   }
 
   const movimento = {
-    id: Date.now().toString(), // ID único
-    tipo,
+    id: Date.now().toString(), // ID local
+    tipo,                      // entrada | saida
     descricao,
     valor,
     data: new Date().toLocaleString('pt-BR'),
     criadoEm: Date.now()
   };
 
-  // 🔹 SALVA LOCAL (nunca perde)
+  // 1️⃣ salva LOCAL primeiro (offline seguro)
   const local = getLocal();
   local.unshift(movimento);
   setLocal(local);
+  renderTudo(local);
 
-  // 🔹 TENTA SALVAR ONLINE
+  // 2️⃣ tenta salvar ONLINE
   try {
-    await addDoc(collection(window.db, 'livroCaixa'), movimento);
+    const ref = await addDoc(collection(window.db, 'livroCaixa'), movimento);
+    movimento.firestoreId = ref.id;
+
+    // atualiza local com firestoreId
+    const atualizado = getLocal().map(i =>
+      i.id === movimento.id ? movimento : i
+    );
+    setLocal(atualizado);
   } catch (e) {
     console.warn('Offline — salvo apenas localmente');
   }
 
   document.getElementById('descricao').value = '';
   document.getElementById('valor').value = '';
-
-  renderTudo(local);
 }
 
 window.salvarMovimento = salvarMovimento;
-
-// ================== EXCLUIR MOVIMENTO ==================
-async function excluirMovimento(id) {
-  if (!confirm('Deseja excluir este movimento?')) return;
-
-  // 🔴 LOCAL
-  let caixa = getLocal();
-  caixa = caixa.filter(item => item.id !== id);
-  setLocal(caixa);
-
-  // 🔴 FIRESTORE
-  try {
-    await deleteDoc(doc(window.db, 'livroCaixa', id));
-  } catch (e) {
-    // pode não existir online, ignora
-  }
-
-  renderTudo(caixa);
-}
 
 // ================== RENDER GERAL ==================
 function renderTudo(lista) {
@@ -99,7 +86,7 @@ function renderTudo(lista) {
   renderLista(lista);
 }
 
-// ================== LISTA ==================
+// ================== LISTA + EXCLUIR ==================
 function renderLista(lista) {
   const ul = document.getElementById('lista');
   ul.innerHTML = '';
@@ -109,7 +96,7 @@ function renderLista(lista) {
     return;
   }
 
-  lista.forEach(i => {
+  lista.forEach(item => {
     const li = document.createElement('li');
     li.style.display = 'flex';
     li.style.justifyContent = 'space-between';
@@ -118,46 +105,63 @@ function renderLista(lista) {
 
     const info = document.createElement('div');
     info.innerHTML = `
-      <strong>${i.tipo === 'entrada' ? '➕ Entrada' : '➖ Saída'}</strong>
-      — ${i.descricao}<br>
-      <small>${i.data}</small>
+      <strong>${item.tipo === 'entrada' ? '➕ Entrada' : '➖ Saída'}</strong>
+      — ${item.descricao}<br>
+      <small>${item.data}</small>
     `;
 
-    const direita = document.createElement('div');
-    direita.style.textAlign = 'right';
+    const ladoDireito = document.createElement('div');
+    ladoDireito.style.textAlign = 'right';
 
     const valor = document.createElement('div');
-    valor.innerHTML =
-      'R$ ' + Number(i.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    valor.innerText =
+      'R$ ' + Number(item.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
     const btnExcluir = document.createElement('button');
     btnExcluir.textContent = '🗑️';
     btnExcluir.title = 'Excluir movimento';
-    btnExcluir.style.marginLeft = '8px';
+    btnExcluir.style.marginTop = '4px';
     btnExcluir.style.background = '#dc3545';
     btnExcluir.style.color = '#fff';
     btnExcluir.style.border = 'none';
     btnExcluir.style.borderRadius = '6px';
+    btnExcluir.style.padding = '4px 8px';
     btnExcluir.style.cursor = 'pointer';
 
-    btnExcluir.onclick = () => excluirMovimento(i.id);
+    btnExcluir.onclick = async () => {
+      if (!confirm('Deseja excluir este movimento?')) return;
 
-    direita.appendChild(valor);
-    direita.appendChild(btnExcluir);
+      // remove local
+      let caixa = getLocal().filter(i => i.id !== item.id);
+      setLocal(caixa);
+      renderTudo(caixa);
+
+      // remove do Firestore (se existir)
+      if (item.firestoreId) {
+        try {
+          await deleteDoc(doc(window.db, 'livroCaixa', item.firestoreId));
+        } catch (e) {
+          console.warn('Erro ao excluir do Firestore');
+        }
+      }
+    };
+
+    ladoDireito.appendChild(valor);
+    ladoDireito.appendChild(btnExcluir);
 
     li.appendChild(info);
-    li.appendChild(direita);
+    li.appendChild(ladoDireito);
     ul.appendChild(li);
   });
 }
 
 // ================== SINCRONIZAÇÃO ==================
 function iniciarSync() {
-  // 1️⃣ mostra LOCAL primeiro
+  // 1️⃣ mostra o que já existe local
   const local = getLocal();
   renderTudo(local);
 
-  // 2️⃣ escuta FIRESTORE
+  // 2️⃣ escuta Firestore
   const q = query(
     collection(window.db, 'livroCaixa'),
     orderBy('criadoEm', 'desc')
@@ -165,8 +169,12 @@ function iniciarSync() {
 
   onSnapshot(q, snapshot => {
     const online = [];
-    snapshot.forEach(doc => {
-      online.push({ id: doc.id, ...doc.data() });
+
+    snapshot.forEach(docSnap => {
+      online.push({
+        firestoreId: docSnap.id,
+        ...docSnap.data()
+      });
     });
 
     // junta sem duplicar
@@ -178,7 +186,6 @@ function iniciarSync() {
     });
 
     combinado.sort((a, b) => b.criadoEm - a.criadoEm);
-
     setLocal(combinado);
     renderTudo(combinado);
   });
