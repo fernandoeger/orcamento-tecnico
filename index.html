@@ -621,6 +621,78 @@ window.addEventListener('keydown', function(e){
     salvarOrcamento();
   }
 });
+function confirmarCompraPecas(orcamentoId) {
+  let historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+  const orc = historico.find(o => o.id === orcamentoId);
+
+  if (!orc) {
+    alert('Orçamento não encontrado.');
+    return;
+  }
+
+  if (orc.pecasCompradas) {
+    alert('As peças deste orçamento já foram marcadas como compradas.');
+    return;
+  }
+
+  if (!confirm('Confirmar a compra das peças deste orçamento?')) return;
+
+  const caixa = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
+
+  // registra cada peça como saída
+  orc.pecas.forEach(p => {
+    if (p.valor > 0) {
+      caixa.unshift({
+        id: Date.now() + Math.random(),
+        tipo: 'saida',
+        descricao: `Compra de peça - ${p.nome} (${orc.cliente || 'Cliente'})`,
+        valor: p.valor,
+        data: new Date().toLocaleString('pt-BR')
+      });
+    }
+  });
+
+  orc.pecasCompradas = true;
+
+  localStorage.setItem('livroCaixa', JSON.stringify(caixa));
+  localStorage.setItem('orcamentos', JSON.stringify(historico));
+
+  alert('Saída registrada no Livro Caixa.');
+  mostrarHistorico();
+}function confirmarPagamento(orcamentoId) {
+  let historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+  const orc = historico.find(o => o.id === orcamentoId);
+
+  if (!orc) {
+    alert('Orçamento não encontrado.');
+    return;
+  }
+
+  if (orc.pago) {
+    alert('Este orçamento já está marcado como pago.');
+    return;
+  }
+
+  if (!confirm('Confirmar o pagamento deste orçamento?')) return;
+
+  const caixa = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
+
+  caixa.unshift({
+    id: Date.now(),
+    tipo: 'entrada',
+    descricao: `Pagamento orçamento - ${orc.cliente || 'Cliente'}`,
+    valor: calcularTotalOrcamento(orc),
+    data: new Date().toLocaleString('pt-BR')
+  });
+
+  orc.pago = true;
+
+  localStorage.setItem('livroCaixa', JSON.stringify(caixa));
+  localStorage.setItem('orcamentos', JSON.stringify(historico));
+
+  alert('Entrada registrada no Livro Caixa.');
+  mostrarHistorico();
+}
 </script>
 </body>
 </html>
