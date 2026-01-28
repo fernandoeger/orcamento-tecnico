@@ -1,72 +1,84 @@
-// orcamento.js (type=module)
-import { auth, db, collection, query, where, orderBy, addDoc, doc, deleteDoc, getDocs, getDoc, onAuthStateChanged, signOut } from './firebase.js';
+// ================= LIVRO CAIXA =================
 
-let perfilUsuario = null;
+function getCaixa() {
+  return JSON.parse(localStorage.getItem('livroCaixa') || '[]');
+}
 
-// Define PREÇOS_SUGERIDOS padrão para não quebrar a renderização antes do Firebase
-window.PRECOS_SUGERIDOS = {
-  "Limpeza interna e troca de pasta térmica": 100,
-  "Formatação": 60,
-  "formatação + Backup": 100,
-  "Reballing": 250,
-  "Atualização de BIOS": 40,
-  "Diagnóstico": 30,
-  "Troca de teclado (mão de obra)": 90,
-  "Instalação de drivers": 30
-};
+function salvarCaixa(dados) {
+  localStorage.setItem('livroCaixa', JSON.stringify(dados));
+}
 
-onAuthStateChanged(auth, async user => {
-  if (!user) {
-    location.href = 'login.html';
+function salvarMovimentoCaixa() {
+  const tipo = document.getElementById('caixaTipo').value;
+  const descricao = document.getElementById('caixaDescricao').value.trim();
+  const valor = parseFloat(document.getElementById('caixaValor').value);
+
+  if (!descricao || !valor || valor <= 0) {
+    alert('Preencha descrição e valor corretamente.');
     return;
   }
 
-  try {
-    const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
-    if (userDoc.exists()) {
-      perfilUsuario = userDoc.data();
-      window.PRECOS_SUGERIDOS = perfilUsuario.servicos || window.PRECOS_SUGERIDOS;
-      if (typeof window.renderizarServicos === 'function') window.renderizarServicos();
-    }
-
-    const btnSair = document.getElementById('btnSair');
-    if (btnSair) {
-      btnSair.addEventListener('click', () => signOut(auth).then(() => location.href = 'login.html'));
-    }
-  } catch (err) {
-    console.error('Erro ao carregar perfil:', err);
-  }
-});
-
-export async function salvarOrcamentoFirestore(orcamento) {
-  const user = auth.currentUser;
-  if (!user) throw new Error('Usuário não autenticado');
-
-  const payload = {
-    ...orcamento,
-    uid: user.uid,
-    empresa: perfilUsuario?.empresa || 'Orçamento Técnico',
-    cnpj: perfilUsuario?.cnpj || null,
-    telefone: perfilUsuario?.telefone || null,
-    createdAt: Date.now()
+  const movimento = {
+    id: Date.now(),
+    tipo,
+    descricao,
+    valor,
+    data: new Date().toLocaleString('pt-BR')
   };
 
-  const docRef = await addDoc(collection(db, 'orcamentos'), payload);
-  return docRef.id;
+  const caixa = getCaixa();
+  caixa.unshift(movimento);
+  salvarCaixa(caixa);
+
+  document.getElementById('caixaDescricao').value = '';
+  document.getElementById('caixaValor').value = '';
+
+  atualizarResumoCaixa();
 }
 
-export async function excluirOrcamentoFirestore(docId) {
-  await deleteDoc(doc(db, 'orcamentos', docId));
+function atualizarResumoCaixa() {
+  const caixa = getCaixa();
+  let entradas = 0;
+  let saidas = 0;
+
+  caixa.forEach(item => {
+    if (item.tipo === 'entrada') entradas += item.valor;
+    if (item.tipo === 'saida') saidas += item.valor;
+  });
+
+  const saldo = entradas - saidas;
+
+  document.getElementById('totalEntradas').innerText =
+    entradas.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+  document.getElementById('totalSaidas').innerText =
+    saidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+  document.getElementById('saldoCaixa').innerText =
+    saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+  renderizarHistoricoCaixa(caixa);
 }
 
-export async function carregarOrcamentosOnce() {
-  const user = auth.currentUser;
-  if (!user) throw new Error('Usuário não autenticado');
-  const q = query(collection(db, 'orcamentos'), where('uid', '==', user.uid), orderBy('createdAt', 'desc'));
-  const snap = await getDocs(q);
-  return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+function renderizarHistoricoCaixa(caixa) {
+  const lista = document.getElementById('listaCaixa');
+  lista.innerHTML = '';
+
+  if (caixa.length === 0) {
+    lista.innerHTML = '<li>Nenhum movimento registrado.</li>';
+    return;
+  }
+
+  caixa.forEach(item => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <strong>${item.tipo === 'entrada' ? '➕ Entrada' : '➖ Saída'}</strong> —
+      ${item.descricao}<br>
+      <small>${item.data}</small>
+      <span style="float:right;">R$ ${item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+    `;
+    lista.appendChild(li);
+  });
 }
 
-export function getPerfilUsuario() {
-  return perfilUsuario;
-}
+document.addEventListener('DOMContentLoaded', atualizarResumoCaixa);
