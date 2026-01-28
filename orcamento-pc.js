@@ -1,11 +1,3 @@
-// ===== ELEMENTOS DO DOM =====
-const cliente = document.getElementById('cliente');
-const aparelho = document.getElementById('aparelho');
-const chkMaoObra = document.getElementById('chkMaoObra');
-const valorMaoObra = document.getElementById('valorMaoObra');
-const totalEl = document.getElementById('total');
-const modalHistorico = document.getElementById('modalHistorico');
-
 // =======================
 // SERVIÇOS PADRÃO
 // =======================
@@ -225,3 +217,25 @@ function confirmarPagamento(id){
 // EXPORTS
 window.mostrarHistorico = mostrarHistorico;
 window.fecharHistorico = fecharHistorico;
+
+// ================= DOM READY =================
+let cliente, aparelho, chkMaoObra, valorMaoObra, totalEl, modalHistorico;
+
+document.addEventListener('DOMContentLoaded', () => {
+  cliente = document.getElementById('cliente');
+  aparelho = document.getElementById('aparelho');
+  chkMaoObra = document.getElementById('chkMaoObra');
+  valorMaoObra = document.getElementById('valorMaoObra');
+  totalEl = document.getElementById('total');
+  modalHistorico = document.getElementById('modalHistorico');
+
+  renderServicos();
+  renderPecas();
+
+  chkMaoObra.onchange = () => {
+    valorMaoObra.disabled = !chkMaoObra.checked;
+    recalcular();
+  };
+
+  document.body.addEventListener('input', recalcular);
+});
