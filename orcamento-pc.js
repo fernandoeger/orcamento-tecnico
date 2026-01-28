@@ -110,3 +110,110 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   document.body.addEventListener('input',recalcular);
 });
+// ================= HISTÓRICO =================
+function getHistorico(){
+  return JSON.parse(localStorage.getItem('orcamentos')||'[]');
+}
+function setHistorico(h){
+  localStorage.setItem('orcamentos',JSON.stringify(h));
+}
+
+function mostrarHistorico(){
+  const ul = document.getElementById('listaHistorico');
+  ul.innerHTML='';
+  const h = getHistorico();
+
+  if(h.length===0){
+    ul.innerHTML='<li>Nenhum orçamento salvo.</li>';
+  }
+
+  h.forEach((o,i)=>{
+    const total = o.itens.reduce((s,x)=>s+x.valor,0);
+
+    const li = document.createElement('li');
+    li.style.marginBottom='10px';
+    li.innerHTML=`
+      <strong>${o.cliente||'Cliente'}</strong><br>
+      ${o.aparelho||''}<br>
+      Total: R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}
+    `;
+
+    const btnPdf = document.createElement('button');
+    btnPdf.textContent='📄 PDF';
+    btnPdf.onclick=()=>gerarPDF(o);
+
+    const btnPago = document.createElement('button');
+    btnPago.textContent = o.pago?'✔️ Pago':'💰 Confirmar pagamento';
+    btnPago.disabled = o.pago;
+    btnPago.onclick=()=>confirmarPagamento(o.id);
+
+    const btnExcluir = document.createElement('button');
+    btnExcluir.textContent='🗑️';
+    btnExcluir.onclick=()=>{
+      if(confirm('Excluir orçamento?')){
+        h.splice(i,1);
+        setHistorico(h);
+        mostrarHistorico();
+      }
+    };
+
+    li.append(btnPdf, btnPago, btnExcluir);
+    ul.appendChild(li);
+  });
+
+  modalHistorico.style.display='block';
+}
+
+function fecharHistorico(){
+  modalHistorico.style.display='none';
+}
+
+// ================= PDF =================
+function gerarPDF(o){
+  let html = `
+    <h2>Orçamento Técnico</h2>
+    <p><strong>Cliente:</strong> ${o.cliente||''}</p>
+    <p><strong>Aparelho:</strong> ${o.aparelho||''}</p>
+    <table style="width:100%;border-collapse:collapse">
+      <tr><th>Item</th><th>Valor</th></tr>
+  `;
+  let total=0;
+  o.itens.forEach(i=>{
+    total+=i.valor;
+    html+=`<tr><td>${i.nome}</td><td>R$ ${i.valor.toFixed(2)}</td></tr>`;
+  });
+  html+=`</table><h3>Total: R$ ${total.toFixed(2)}</h3>`;
+
+  const w = window.open('','_blank');
+  w.document.write(html);
+  w.print();
+}
+
+// ================= CAIXA =================
+function confirmarPagamento(id){
+  const h = getHistorico();
+  const o = h.find(x=>x.id===id);
+  if(!o||o.pago) return;
+
+  const total = o.itens.reduce((s,x)=>s+x.valor,0);
+  const caixa = JSON.parse(localStorage.getItem('livroCaixa')||'[]');
+
+  caixa.unshift({
+    id:Date.now(),
+    tipo:'entrada',
+    descricao:`Pagamento orçamento - ${o.cliente||''}`,
+    valor:total,
+    data:new Date().toLocaleString('pt-BR')
+  });
+
+  localStorage.setItem('livroCaixa',JSON.stringify(caixa));
+  o.pago=true;
+  setHistorico(h);
+
+  alert('Entrada registrada no Caixa');
+  mostrarHistorico();
+}
+
+// EXPORTS
+window.mostrarHistorico = mostrarHistorico;
+window.fecharHistorico = fecharHistorico;
