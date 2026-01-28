@@ -6,39 +6,13 @@
   <title>Orçamento Técnico</title>
 
   <style>
-    body{
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
-      max-width:900px;
-      margin:16px auto;
-      padding:12px
-    }
+    body{font-family:system-ui;max-width:900px;margin:16px auto;padding:12px}
     label{display:block;margin-top:10px;font-weight:600}
-    input,textarea{
-      width:100%;
-      padding:8px;
-      margin-top:6px;
-      border:1px solid #ccc;
-      border-radius:6px
-    }
-    .section{
-      margin-top:14px;
-      padding:12px;
-      border:1px solid #eee;
-      border-radius:8px;
-      background:#fafafa
-    }
-    .btn{
-      padding:8px 12px;
-      border-radius:6px;
-      border:0;
-      background:#0b76ef;
-      color:#fff;
-      margin-top:10px;
-      cursor:pointer
-    }
+    input{width:100%;padding:8px;margin-top:6px}
+    .section{margin-top:14px;padding:12px;border:1px solid #ddd;border-radius:8px}
+    .btn{padding:8px 12px;border:0;border-radius:6px;background:#0b76ef;color:#fff;margin-top:10px}
     .btn.secondary{background:#6c757d}
     .btn.history{background:#28a745}
-    ul{padding-left:18px}
   </style>
 </head>
 
@@ -55,11 +29,8 @@
 <input id="aparelho">
 
 <div class="section">
-  <h3>Mão de obra</h3>
-  <label>
-    <input type="checkbox" id="chkMaoObra"> Incluir mão de obra
-  </label>
-  <input type="number" id="valorMaoObra" value="120" disabled>
+  <label><input type="checkbox" id="chkMaoObra"> Incluir mão de obra</label>
+  <input id="valorMaoObra" type="number" value="120" disabled>
 </div>
 
 <div class="section">
@@ -68,38 +39,23 @@
 </div>
 
 <div class="section">
-  <h3>Peças (valor de custo)</h3>
+  <h3>Peças (custo + 30%)</h3>
   <div id="pecas"></div>
-  <small>⚠️ O sistema aplica +30% automaticamente</small>
 </div>
 
-<!-- ===== AÇÕES ===== -->
 <div class="section">
-  <strong>Total:</strong>
-  <span id="total">R$ 0,00</span><br>
+  <strong>Total:</strong> <span id="total">R$ 0,00</span><br>
 
   <button class="btn" onclick="recalcular()">Calcular</button>
-  <button class="btn secondary" onclick="salvarOrcamento()">Salvar orçamento</button>
+  <button class="btn secondary" onclick="salvarOrcamento()">Salvar</button>
   <button class="btn history" onclick="mostrarHistorico()">Histórico</button>
-  <button class="btn secondary" onclick="window.print()">Gerar PDF</button>
+  <button class="btn secondary" onclick="window.print()">PDF</button>
 </div>
 
-<!-- ===== MODAL HISTÓRICO ===== -->
-<div id="modalHistorico" style="
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.6);
-  z-index:9999
-">
-  <div style="
-    background:#fff;
-    margin:40px auto;
-    padding:20px;
-    max-width:700px;
-    border-radius:8px
-  ">
-    <h3>Histórico de Orçamentos</h3>
+<!-- MODAL -->
+<div id="modalHistorico" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6)">
+  <div style="background:#fff;margin:40px auto;padding:20px;max-width:700px">
+    <h3>Histórico</h3>
     <ul id="listaHistorico"></ul>
     <button class="btn secondary" onclick="fecharHistorico()">Fechar</button>
   </div>
