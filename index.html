@@ -664,31 +664,43 @@ function confirmarCompraPecas(orcamentoId) {
   const orc = historico.find(o => o.id === orcamentoId);
 
   if (!orc || orc.pago) return;
-
   if (!confirm('Confirmar o pagamento deste orçamento?')) return;
 
-  const caixa = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
+  let total = 0;
 
-  // 🔑 pega o total já calculado (ex: "R$ 350,00")
-  const valorTexto = orc.totalTexto || orc.total || '0';
-  const valorNumerico = parseFloat(
-    valorTexto
-      .replace('R$', '')
-      .replace(/\./g, '')
-      .replace(',', '.')
-      .trim()
-  );
+  // mão de obra
+  if (orc.maoObraIncluida) {
+    total += Number(orc.valorMaoObra || 0);
+  }
 
-  if (!valorNumerico || valorNumerico <= 0) {
-    alert('Erro ao obter valor do orçamento.');
+  // serviços
+  if (Array.isArray(orc.servicos)) {
+    orc.servicos.forEach(s => {
+      if (s.selecionado) {
+        total += Number(s.valor || 0);
+      }
+    });
+  }
+
+  // peças (+ lucro 25%)
+  if (Array.isArray(orc.pecas)) {
+    orc.pecas.forEach(p => {
+      total += Number(p.valor || 0) * 1.25;
+    });
+  }
+
+  if (!total || total <= 0) {
+    alert('Erro ao calcular o valor do orçamento.');
     return;
   }
+
+  const caixa = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
 
   caixa.unshift({
     id: Date.now(),
     tipo: 'entrada',
     descricao: `Pagamento orçamento - ${orc.cliente || 'Cliente'}`,
-    valor: valorNumerico,
+    valor: total,
     data: new Date().toLocaleString('pt-BR')
   });
 
