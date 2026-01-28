@@ -3,62 +3,83 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Orçamento de Impressora</title>
+<title>Orçamento Impressora</title>
 
 <style>
 body{
   font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
   max-width:900px;
-  margin:18px auto;
-  padding:12px;
-  background:#f7f7f7
+  margin:0 auto;
+  padding:14px;
+  background:#f7f7f7;
 }
-h1{margin-bottom:6px}
+h1{margin-bottom:10px}
 label{display:block;margin-top:10px;font-weight:600}
 input{
   width:100%;
-  padding:8px;
+  padding:10px;
   margin-top:6px;
   border:1px solid #ccc;
-  border-radius:6px
+  border-radius:8px;
+  font-size:16px;
 }
 .section{
   background:#fff;
-  padding:12px;
+  padding:14px;
   margin-top:14px;
-  border-radius:8px;
-  border:1px solid #eee
+  border-radius:10px;
+  border:1px solid #eee;
 }
 .btn{
   display:inline-block;
-  padding:8px 12px;
+  padding:10px 14px;
   margin-top:10px;
-  border-radius:6px;
+  border-radius:8px;
   border:0;
   background:#0b76ef;
   color:#fff;
-  cursor:pointer
+  cursor:pointer;
+  font-size:15px;
 }
 .btn.secondary{background:#6c757d}
 .btn.history{background:#28a745}
 
+/* ===== SERVIÇOS (GRID – iOS SAFE) ===== */
 .linha-servico{
-  display:flex;
-  gap:8px;
-  align-items:center;
-  margin-bottom:8px
+  display:grid;
+  grid-template-columns: 28px 1fr;
+  gap:10px;
+  margin-bottom:14px;
 }
-.linha-servico span{
-  flex:1
+.linha-servico input[type="checkbox"]{
+  transform:scale(1.3);
+  margin-top:4px;
 }
-.linha-servico input[type="number"]{
-  width:90px
+.linha-servico .nome{
+  font-weight:600;
+}
+.linha-servico .valor{
+  margin-top:6px;
+  width:100%;
+  max-width:160px;
 }
 
-/* PDF */
-@media print{
-  body > *:not(.resumo-final){display:none!important}
-  .resumo-final{display:block!important}
+/* ===== HISTÓRICO ===== */
+ul{list-style:none;padding:0}
+li{padding:12px 0;border-bottom:1px solid #eee}
+
+#modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+}
+#modal .box{
+  background:#fff;
+  margin:40px auto;
+  padding:20px;
+  max-width:700px;
+  border-radius:10px;
 }
 </style>
 </head>
@@ -87,141 +108,176 @@ input{
   <button class="btn" onclick="calcular()">Calcular</button>
   <button class="btn secondary" onclick="salvarOrcamento()">Salvar Orçamento</button>
   <button class="btn history" onclick="mostrarHistorico()">Histórico</button>
-  <button class="btn secondary" onclick="window.print()">Gerar PDF</button>
+  <button class="btn secondary" onclick="gerarPDF()">Gerar PDF</button>
 </div>
 
-<!-- PDF -->
-<div class="section resumo-final" style="display:none">
-  <h2>Orçamento de Impressora</h2>
-  <p><strong>Cliente:</strong> <span id="pdfCliente"></span></p>
-  <p><strong>Impressora:</strong> <span id="pdfModelo"></span></p>
-  <p><strong>Data:</strong> <span id="pdfData"></span></p>
-
-  <table style="width:100%;border-collapse:collapse;margin-top:10px">
-    <thead>
-      <tr>
-        <th style="border-bottom:1px solid #000;text-align:left">Serviço</th>
-        <th style="border-bottom:1px solid #000;text-align:right">Valor</th>
-      </tr>
-    </thead>
-    <tbody id="pdfServicos"></tbody>
-  </table>
-
-  <h3 style="text-align:right;margin-top:10px">
-    Total: R$ <span id="pdfTotal"></span>
-  </h3>
-
-  <p style="margin-top:20px">
-    <strong>Garantia:</strong><br>
-    Garantia de 90 dias para o serviço executado.
-  </p>
-</div>
-
-<!-- HISTÓRICO -->
-<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6)">
-  <div style="background:#fff;margin:40px auto;padding:20px;max-width:700px;border-radius:8px">
+<!-- MODAL HISTÓRICO -->
+<div id="modal">
+  <div class="box">
     <h3>Histórico de Impressoras</h3>
     <ul id="listaHistorico"></ul>
-    <button class="btn secondary" onclick="modal.style.display='none'">Fechar</button>
+    <button class="btn secondary" onclick="fecharHistorico()">Fechar</button>
   </div>
 </div>
 
 <script>
+// ================= SERVIÇOS PADRÃO =================
 const SERVICOS_IMPRESSORA = {
-  "Instalação USB":50,
-  "Instalação Wi-Fi":80,
-  "Configuração completa":120,
-  "Limpeza de cabeçote":80,
-  "Desentupimento":120,
-  "Reset contador":60,
-  "Manutenção preventiva":100,
-  "Diagnóstico / Teste":40
+  "Instalação USB": 50,
+  "Instalação Wi-Fi": 80,
+  "Configuração completa": 120,
+  "Limpeza de cabeçote": 80,
+  "Desentupimento": 120,
+  "Reset de contador": 60,
+  "Manutenção preventiva": 100,
+  "Diagnóstico / Teste": 40
 };
 
+// ================= RENDER =================
 function renderizarServicos(){
-  const div=document.getElementById('servicos');
-  div.innerHTML='';
-  for(const [n,v] of Object.entries(SERVICOS_IMPRESSORA)){
-    const l=document.createElement('div');
-    l.className='linha-servico';
-    l.innerHTML=`
-      <input type="checkbox">
-      <span>${n}</span>
-      <input type="number" value="${v}" disabled>
-    `;
-    const c=l.children[0], i=l.children[2];
-    c.onchange=()=>{i.disabled=!c.checked;if(!c.checked)i.value=0;calcular()};
-    i.oninput=calcular;
-    div.appendChild(l);
+  const div = document.getElementById('servicos');
+  div.innerHTML = '';
+
+  for(const [nome, valor] of Object.entries(SERVICOS_IMPRESSORA)){
+    const linha = document.createElement('div');
+    linha.className = 'linha-servico';
+
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+
+    const bloco = document.createElement('div');
+
+    const nomeDiv = document.createElement('div');
+    nomeDiv.className = 'nome';
+    nomeDiv.textContent = nome;
+
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.className = 'valor';
+    inp.value = valor;
+    inp.disabled = true;
+
+    chk.onchange = () => {
+      inp.disabled = !chk.checked;
+      if(!chk.checked) inp.value = 0;
+      calcular();
+    };
+    inp.oninput = calcular;
+
+    bloco.appendChild(nomeDiv);
+    bloco.appendChild(inp);
+
+    linha.appendChild(chk);
+    linha.appendChild(bloco);
+    div.appendChild(linha);
   }
 }
 
+// ================= CALCULAR =================
 function calcular(){
-  let total=0;
+  let total = 0;
   document.querySelectorAll('.linha-servico').forEach(l=>{
-    if(l.children[0].checked) total+=Number(l.children[2].value||0);
-  });
-  document.getElementById('total').innerText='R$ '+total.toLocaleString('pt-BR',{minimumFractionDigits:2});
-  preencherPDF(total);
-}
-
-function preencherPDF(total){
-  pdfCliente.innerText=cliente.value||'—';
-  pdfModelo.innerText=modelo.value||'—';
-  pdfData.innerText=new Date().toLocaleString('pt-BR');
-  pdfServicos.innerHTML='';
-  document.querySelectorAll('.linha-servico').forEach(l=>{
-    if(l.children[0].checked){
-      pdfServicos.innerHTML+=`
-        <tr>
-          <td>${l.children[1].innerText}</td>
-          <td style="text-align:right">R$ ${Number(l.children[2].value).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-        </tr>`;
+    if(l.querySelector('input[type="checkbox"]').checked){
+      total += Number(l.querySelector('.valor').value || 0);
     }
   });
-  pdfTotal.innerText=total.toLocaleString('pt-BR',{minimumFractionDigits:2});
+  document.getElementById('total').innerText =
+    'R$ ' + total.toLocaleString('pt-BR',{minimumFractionDigits:2});
 }
 
+// ================= SALVAR =================
 function salvarOrcamento(){
-  const h=JSON.parse(localStorage.getItem('orcamentos')||'[]');
-  const serv=[];
+  const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+  const servicos = [];
+
   document.querySelectorAll('.linha-servico').forEach(l=>{
-    if(l.children[0].checked){
-      serv.push({nome:l.children[1].innerText,valor:Number(l.children[2].value)});
+    if(l.querySelector('input[type="checkbox"]').checked){
+      servicos.push({
+        nome: l.querySelector('.nome').textContent,
+        valor: Number(l.querySelector('.valor').value)
+      });
     }
   });
-  h.unshift({id:Date.now(),tipoServico:'impressora',cliente:cliente.value,equipamento:modelo.value,servicos:serv,pago:false});
-  localStorage.setItem('orcamentos',JSON.stringify(h));
-  alert('Orçamento salvo!');
-}
 
-function mostrarHistorico(){
-  const h=JSON.parse(localStorage.getItem('orcamentos')||'[]').filter(o=>o.tipoServico==='impressora');
-  listaHistorico.innerHTML='';
-  h.forEach(o=>{
-    let t=o.servicos.reduce((s,i)=>s+i.valor,0);
-    const li=document.createElement('li');
-    li.innerHTML=`<strong>${o.cliente||'Cliente'}</strong><br>${o.equipamento}<br>Total: R$ ${t.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-    const b=document.createElement('button');
-    b.className='btn';b.textContent=o.pago?'✔️ Pago':'💰 Confirmar pagamento';
-    b.disabled=o.pago;
-    b.onclick=()=>confirmarPagamento(o.id,t);
-    li.appendChild(b);listaHistorico.appendChild(li);
+  historico.unshift({
+    id: Date.now(),
+    tipoServico: 'impressora',
+    cliente: cliente.value,
+    equipamento: modelo.value,
+    servicos,
+    pago: false
   });
-  modal.style.display='block';
+
+  localStorage.setItem('orcamentos', JSON.stringify(historico));
+  alert('Orçamento de impressora salvo!');
 }
 
-function confirmarPagamento(id,total){
-  const caixa=JSON.parse(localStorage.getItem('livroCaixa')||'[]');
-  caixa.unshift({id:Date.now(),tipo:'entrada',descricao:'Pagamento impressora',valor:total,data:new Date().toLocaleString('pt-BR')});
-  localStorage.setItem('livroCaixa',JSON.stringify(caixa));
-  let h=JSON.parse(localStorage.getItem('orcamentos'));
-  const o=h.find(x=>x.id===id); if(o)o.pago=true;
-  localStorage.setItem('orcamentos',JSON.stringify(h));
+// ================= HISTÓRICO =================
+function mostrarHistorico(){
+  const ul = document.getElementById('listaHistorico');
+  ul.innerHTML = '';
+
+  const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]')
+    .filter(o => o.tipoServico === 'impressora');
+
+  historico.forEach(o=>{
+    let total = 0;
+    o.servicos.forEach(s => total += Number(s.valor || 0));
+
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <strong>${o.cliente || 'Cliente'}</strong><br>
+      ${o.equipamento || ''}<br>
+      Total: R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}
+    `;
+
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.textContent = o.pago ? '✔️ Pago' : '💰 Confirmar pagamento';
+    btn.disabled = o.pago;
+    btn.onclick = ()=>confirmarPagamento(o.id);
+
+    li.appendChild(btn);
+    ul.appendChild(li);
+  });
+
+  modal.style.display = 'block';
+}
+
+function fecharHistorico(){
+  modal.style.display = 'none';
+}
+
+// ================= LIVRO CAIXA =================
+function confirmarPagamento(id){
+  if(!confirm('Confirmar pagamento?')) return;
+
+  let historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+  const o = historico.find(x => x.id === id);
+  if(!o || o.pago) return;
+
+  let total = 0;
+  o.servicos.forEach(s => total += Number(s.valor || 0));
+
+  const caixa = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
+  caixa.unshift({
+    id: Date.now(),
+    tipo: 'entrada',
+    descricao: `Pagamento impressora - ${o.equipamento || ''}`,
+    valor: total,
+    data: new Date().toLocaleString('pt-BR')
+  });
+
+  localStorage.setItem('livroCaixa', JSON.stringify(caixa));
+
+  o.pago = true;
+  localStorage.setItem('orcamentos', JSON.stringify(historico));
+
   mostrarHistorico();
 }
 
-document.addEventListener('DOMContentLoaded',renderizarServicos);
+document.addEventListener('DOMContentLoaded', renderizarServicos);
 </script>
+
 </body>
 </html>
