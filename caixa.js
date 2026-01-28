@@ -1,6 +1,9 @@
 import {
   collection,
-  addDoc
+  addDoc,
+  onSnapshot,
+  query,
+  orderBy
 } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 // ================== STORAGE ==================
 function getCaixa() {
@@ -130,10 +133,64 @@ function excluirMovimento(id) {
 }
 
 // ================== AUTO ATUALIZA ==================
-document.addEventListener('DOMContentLoaded', atualizarResumo);
+document.addEventListener('DOMContentLoaded', iniciarLeituraCaixa);
 
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) {
     atualizarResumo();
   }
+  function iniciarLeituraCaixa() {
+  // 1️⃣ dados antigos (localStorage)
+  const local = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
+
+  // mostra local primeiro
+  atualizarResumoFirestore(local);
+
+  // 2️⃣ dados online (Firestore)
+  const q = query(
+    collection(window.db, 'livroCaixa'),
+    orderBy('criadoEm', 'desc')
+  );
+
+  onSnapshot(q, snapshot => {
+    const online = [];
+    snapshot.forEach(doc => {
+      online.push({ id: doc.id, ...doc.data() });
+    });
+
+    // junta local + online (sem duplicar)
+    const combinado = [...online];
+
+    local.forEach(l => {
+      if (!online.some(o => o.criadoEm === l.criadoEm)) {
+        combinado.push(l);
+      }
+    });
+
+    atualizarResumoFirestore(combinado);
+  });
+}
+function atualizarResumoFirestore(caixa) {
+  let entradas = 0;
+  let saidas = 0;
+
+  caixa.forEach(item => {
+    if (item.tipo === 'entrada') {
+      entradas += Number(item.valor);
+    } else if (item.tipo === 'saida') {
+      saidas += Number(item.valor);
+    }
+  });
+
+  document.getElementById('entradas').innerText =
+    entradas.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+  document.getElementById('saidas').innerText =
+    saidas.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+  document.getElementById('saldo').innerText =
+    (entradas - saidas).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+  renderizarLista(caixa);
+}
 });
