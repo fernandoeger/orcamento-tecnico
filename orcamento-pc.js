@@ -98,18 +98,6 @@ function salvarOrcamento(){
   alert('Orçamento salvo');
 }
 
-// ================= INIT =================
-document.addEventListener('DOMContentLoaded',()=>{
-  renderServicos();
-  renderPecas();
-
-  chkMaoObra.onchange=()=>{
-    valorMaoObra.disabled=!chkMaoObra.checked;
-    recalcular();
-  };
-
-  document.body.addEventListener('input',recalcular);
-});
 // ================= HISTÓRICO =================
 function getHistorico(){
   return JSON.parse(localStorage.getItem('orcamentos')||'[]');
