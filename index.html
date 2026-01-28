@@ -3,70 +3,38 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Orçamento – Computador</title>
+  <title>Orçamento Técnico</title>
 
   <style>
-    body{
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
-      max-width:900px;
-      margin:18px auto;
-      padding:12px;
-      background:#f7f7f7;
-    }
-    h1{margin-bottom:10px}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;max-width:900px;margin:16px auto;padding:12px}
     label{display:block;margin-top:10px;font-weight:600}
-    input, textarea{
-      width:100%;
-      padding:8px;
-      margin-top:6px;
-      border:1px solid #ccc;
-      border-radius:6px;
-    }
-    .section{
-      background:#fff;
-      padding:12px;
-      margin-top:14px;
-      border-radius:8px;
-      border:1px solid #eee;
-    }
-    .btn{
-      display:inline-block;
-      padding:8px 12px;
-      margin-top:10px;
-      border-radius:6px;
-      border:0;
-      background:#0b76ef;
-      color:#fff;
-      cursor:pointer;
-    }
+    input,textarea{width:100%;padding:8px;margin-top:6px;border:1px solid #ccc;border-radius:6px}
+    .section{margin-top:14px;padding:12px;border:1px solid #eee;border-radius:8px;background:#fafafa}
+    .btn{padding:8px 12px;border-radius:6px;border:0;background:#0b76ef;color:#fff;margin-top:10px}
     .btn.secondary{background:#6c757d}
-    .btn.danger{background:#dc3545}
-    ul{list-style:none;padding:0}
-    li{border-bottom:1px solid #eee;padding:8px 0}
+    .row{display:flex;gap:8px}
+    .row>*{flex:1}
+    ul{padding-left:18px}
   </style>
 </head>
-
 <body>
 
-<h1>💻 Orçamento – Computador</h1>
+<h1>🖥️ Orçamento</h1>
 
 <a href="caixa.html" class="btn secondary">📘 Livro Caixa</a>
-<a href="impressora.html" class="btn secondary">🖨️ Impressora</a>
 
-<div class="section">
-  <label>Cliente</label>
-  <input id="cliente">
+<label>Cliente</label>
+<input id="cliente">
 
-  <label>Aparelho</label>
-  <input id="aparelho" placeholder="Ex: Notebook Acer, PC Gamer…">
-</div>
+<label>Aparelho</label>
+<input id="aparelho">
 
 <div class="section">
   <h3>Mão de obra</h3>
   <label>
     <input type="checkbox" id="chkMaoObra"> Incluir mão de obra
   </label>
-  <input id="valorMaoObra" type="number" value="120" disabled>
+  <input type="number" id="valorMaoObra" value="120" disabled>
 </div>
 
 <div class="section">
@@ -75,25 +43,18 @@
 </div>
 
 <div class="section">
-  <h3>Peças</h3>
-  <input class="peca" data-nome="SSD" placeholder="SSD – valor">
-  <input class="peca" data-nome="Memória RAM" placeholder="RAM – valor">
-  <input class="peca" data-nome="Bateria" placeholder="Bateria – valor">
+  <h3>Peças (valor de custo)</h3>
+  <div id="pecas"></div>
+  <small>⚠️ O sistema aplica +30% automaticamente</small>
 </div>
 
 <div class="section">
-  <strong>Total:</strong> R$ <span id="total">0,00</span><br>
+  <strong>Total:</strong>
+  <span id="total">R$ 0,00</span><br>
   <button class="btn" onclick="recalcular()">Calcular</button>
   <button class="btn secondary" onclick="salvarOrcamento()">Salvar orçamento</button>
-  <button class="btn" onclick="mostrarHistorico()">Histórico</button>
 </div>
 
-<div class="section" id="historico" style="display:none">
-  <h3>Histórico</h3>
-  <ul id="listaHistorico"></ul>
-  <button class="btn secondary" onclick="fecharHistorico()">Fechar</button>
-</div>
-
-<script src="./orcamento-pc.js"></script>
+<script src="orcamento-pc.js"></script>
 </body>
 </html>
