@@ -82,7 +82,6 @@
   <ul id="lista"></ul>
 </div>
 
-<script src="./caixa.js"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
   import { getFirestore } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
@@ -101,5 +100,28 @@
 
   window.db = db; // 👈 MUITO IMPORTANTE
 </script>
+<!-- 1️⃣ Firebase PRIMEIRO -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBOx0NOGFrMMznnJkph3DDO7cf8z1ObAdk",
+    authDomain: "orcamento-tecnico-cbf90.firebaseapp.com",
+    projectId: "orcamento-tecnico-cbf90",
+    storageBucket: "orcamento-tecnico-cbf90.firebasestorage.app",
+    messagingSenderId: "512091779902",
+    appId: "1:512091779902:web:37c19342cd49418a68f26f"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // 🔑 deixa disponível pro caixa.js
+  window.db = db;
+</script>
+
+<!-- 2️⃣ Caixa DEPOIS (COMO MODULE) -->
+<script type="module" src="./caixa.js"></script>
 </body>
 </html>
