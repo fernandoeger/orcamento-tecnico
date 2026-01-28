@@ -93,4 +93,13 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) {
     atualizarResumo();
   }
+  function excluirMovimento(id) {
+  if (!confirm('Deseja excluir este movimento do caixa?')) return;
+
+  let caixa = getCaixa();
+  caixa = caixa.filter(item => item.id !== id);
+
+  salvarCaixa(caixa);
+  atualizarResumo();
+}
 });
