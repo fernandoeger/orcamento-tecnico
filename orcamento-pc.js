@@ -119,42 +119,56 @@ function setHistorico(h){
 }
 
 function mostrarHistorico(){
+  const modal = document.getElementById('modalHistorico');
   const ul = document.getElementById('listaHistorico');
-  ul.innerHTML='';
+
+  ul.innerHTML = '';
   const h = getHistorico();
 
-  if(h.length===0){
-    ul.innerHTML='<li>Nenhum orçamento salvo.</li>';
+  if(h.length === 0){
+    ul.innerHTML = '<li>Nenhum orçamento salvo.</li>';
   }
 
   h.forEach((o,i)=>{
-    const total = o.itens.reduce((s,x)=>s+x.valor,0);
+    const total = o.itens.reduce((s,x)=>s + x.valor, 0);
 
     const li = document.createElement('li');
-    li.style.marginBottom='10px';
-    li.innerHTML=`
-      <strong>${o.cliente||'Cliente'}</strong><br>
-      ${o.aparelho||''}<br>
+    li.style.marginBottom = '10px';
+    li.innerHTML = `
+      <strong>${o.cliente || 'Cliente'}</strong><br>
+      ${o.aparelho || ''}<br>
       Total: R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}
     `;
 
     const btnPdf = document.createElement('button');
-    btnPdf.textContent='📄 PDF';
-    btnPdf.onclick=()=>gerarPDF(o);
+    btnPdf.textContent = '📄 PDF';
+    btnPdf.onclick = () => gerarPDF(o);
 
     const btnPago = document.createElement('button');
-    btnPago.textContent = o.pago?'✔️ Pago':'💰 Confirmar pagamento';
+    btnPago.textContent = o.pago ? '✔️ Pago' : '💰 Confirmar pagamento';
     btnPago.disabled = o.pago;
-    btnPago.onclick=()=>confirmarPagamento(o.id);
+    btnPago.onclick = () => confirmarPagamento(o.id);
 
     const btnExcluir = document.createElement('button');
-    btnExcluir.textContent='🗑️';
-    btnExcluir.onclick=()=>{
+    btnExcluir.textContent = '🗑️';
+    btnExcluir.onclick = () => {
       if(confirm('Excluir orçamento?')){
         h.splice(i,1);
         setHistorico(h);
         mostrarHistorico();
       }
+    };
+
+    li.append(btnPdf, btnPago, btnExcluir);
+    ul.appendChild(li);
+  });
+
+  modal.style.display = 'block';
+}
+
+function fecharHistorico(){
+  document.getElementById('modalHistorico').style.display = 'none';
+}
     };
 
     li.append(btnPdf, btnPago, btnExcluir);
