@@ -4,7 +4,9 @@ import {
   addDoc,
   onSnapshot,
   query,
-  orderBy
+  orderBy,
+  doc,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 
 // ================== LOCAL STORAGE ==================
