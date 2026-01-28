@@ -1,3 +1,11 @@
+// ===== ELEMENTOS DO DOM =====
+const cliente = document.getElementById('cliente');
+const aparelho = document.getElementById('aparelho');
+const chkMaoObra = document.getElementById('chkMaoObra');
+const valorMaoObra = document.getElementById('valorMaoObra');
+const totalEl = document.getElementById('total');
+const modalHistorico = document.getElementById('modalHistorico');
+
 // =======================
 // SERVIÇOS PADRÃO
 // =======================
