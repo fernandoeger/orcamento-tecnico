@@ -1,3 +1,4 @@
+// ================== STORAGE ==================
 function getCaixa() {
   return JSON.parse(localStorage.getItem('livroCaixa') || '[]');
 }
@@ -6,6 +7,7 @@ function salvarCaixa(lista) {
   localStorage.setItem('livroCaixa', JSON.stringify(lista));
 }
 
+// ================== SALVAR MOVIMENTO MANUAL ==================
 function salvarMovimento() {
   const tipo = document.getElementById('tipo').value;
   const descricao = document.getElementById('descricao').value.trim();
@@ -34,6 +36,7 @@ function salvarMovimento() {
   atualizarResumo();
 }
 
+// ================== RESUMO ==================
 function atualizarResumo() {
   const caixa = getCaixa();
   let entradas = 0;
@@ -41,7 +44,7 @@ function atualizarResumo() {
 
   caixa.forEach(item => {
     if (item.tipo === 'entrada') entradas += item.valor;
-    else saidas += item.valor;
+    else if (item.tipo === 'saida') saidas += item.valor;
   });
 
   document.getElementById('entradas').innerText =
@@ -56,6 +59,7 @@ function atualizarResumo() {
   renderizarLista(caixa);
 }
 
+// ================== LISTA ==================
 function renderizarLista(caixa) {
   const ul = document.getElementById('lista');
   ul.innerHTML = '';
@@ -79,4 +83,14 @@ function renderizarLista(caixa) {
   });
 }
 
+// ================== AUTO ATUALIZAÇÃO ==================
+
+// quando a página carrega
 document.addEventListener('DOMContentLoaded', atualizarResumo);
+
+// quando o app volta para a tela (iPhone / PWA / Safari)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    atualizarResumo();
+  }
+});
