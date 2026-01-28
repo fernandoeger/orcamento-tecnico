@@ -41,6 +41,15 @@
     }
     .btn.secondary{background:#6c757d}
     .btn.history{background:#28a745}
+    .linha-servico{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-bottom:8px;
+    }
+    .linha-servico input[type="number"]{
+      width:120px;
+    }
     ul{list-style:none;padding:0}
     li{padding:10px 0;border-bottom:1px solid #eee}
   </style>
@@ -91,38 +100,52 @@ const SERVICOS_IMPRESSORA = {
   "Desentupimento": 120,
   "Reset contador": 60,
   "Manutenção preventiva": 100,
-  "Teste / Diagnóstico": 40
+  "Diagnóstico / Teste": 40
 };
 
-// ================= RENDER =================
+// ================= RENDER SERVIÇOS =================
 function renderizarServicos(){
   const div = document.getElementById('servicos');
   div.innerHTML = '';
-  for(const [nome,valor] of Object.entries(SERVICOS_IMPRESSORA)){
-    const item = document.createElement('div');
-    item.innerHTML = `
-      <input type="checkbox">
-      ${nome}
-      <input type="number" value="${valor}" disabled>
-    `;
-    const chk = item.children[0];
-    const inp = item.children[2];
-    chk.onchange = () => {
+
+  for(const [nome, valor] of Object.entries(SERVICOS_IMPRESSORA)){
+    const linha = document.createElement('div');
+    linha.className = 'linha-servico';
+
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+
+    const lbl = document.createElement('span');
+    lbl.textContent = nome;
+
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.value = valor;
+    inp.disabled = true;
+
+    chk.addEventListener('change', () => {
       inp.disabled = !chk.checked;
       if(!chk.checked) inp.value = 0;
       calcular();
-    };
-    inp.oninput = calcular;
-    div.appendChild(item);
+    });
+
+    inp.addEventListener('input', calcular);
+
+    linha.appendChild(chk);
+    linha.appendChild(lbl);
+    linha.appendChild(inp);
+    div.appendChild(linha);
   }
 }
 
 // ================= CALCULAR =================
 function calcular(){
   let total = 0;
-  document.querySelectorAll('#servicos div').forEach(d=>{
-    if(d.children[0].checked){
-      total += Number(d.children[2].value || 0);
+  document.querySelectorAll('.linha-servico').forEach(l=>{
+    const chk = l.children[0];
+    const inp = l.children[2];
+    if(chk.checked){
+      total += Number(inp.value || 0);
     }
   });
   document.getElementById('total').innerText =
@@ -134,11 +157,11 @@ function salvarOrcamento(){
   const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
 
   const servicos = [];
-  document.querySelectorAll('#servicos div').forEach(d=>{
-    if(d.children[0].checked){
+  document.querySelectorAll('.linha-servico').forEach(l=>{
+    if(l.children[0].checked){
       servicos.push({
-        nome: d.children[1].textContent.trim(),
-        valor: Number(d.children[2].value)
+        nome: l.children[1].textContent,
+        valor: Number(l.children[2].value)
       });
     }
   });
@@ -150,7 +173,7 @@ function salvarOrcamento(){
     equipamento: modelo.value,
     servicos,
     pago: false,
-    pecasCompradas: true // impressora não usa peças aqui
+    pecasCompradas: true
   });
 
   localStorage.setItem('orcamentos', JSON.stringify(historico));
@@ -167,11 +190,13 @@ function mostrarHistorico(){
 
   historico.forEach(o=>{
     const li = document.createElement('li');
-    const total = o.servicos.reduce((s,i)=>s+i.valor,0);
+
+    let total = 0;
+    o.servicos.forEach(s => total += Number(s.valor || 0));
 
     li.innerHTML = `
       <strong>${o.cliente || 'Cliente'}</strong><br>
-      ${o.equipamento}<br>
+      ${o.equipamento || ''}<br>
       Total: R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}
     `;
 
@@ -179,7 +204,7 @@ function mostrarHistorico(){
     btnPago.className = 'btn';
     btnPago.textContent = o.pago ? '✔️ Pago' : '💰 Confirmar pagamento';
     btnPago.disabled = o.pago;
-    btnPago.onclick = ()=>confirmarPagamento(o.id,total);
+    btnPago.onclick = ()=>confirmarPagamento(o.id);
 
     li.appendChild(btnPago);
     ul.appendChild(li);
@@ -193,23 +218,28 @@ function fecharHistorico(){
 }
 
 // ================= CAIXA =================
-function confirmarPagamento(id,total){
+function confirmarPagamento(id){
   if(!confirm('Confirmar pagamento?')) return;
+
+  let historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+  const o = historico.find(x=>x.id===id);
+  if(!o || o.pago) return;
+
+  let total = 0;
+  o.servicos.forEach(s => total += Number(s.valor || 0));
 
   const caixa = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
   caixa.unshift({
     id: Date.now(),
     tipo:'entrada',
-    descricao:'Pagamento impressora',
+    descricao:`Pagamento impressora - ${o.equipamento || ''}`,
     valor: total,
     data: new Date().toLocaleString('pt-BR')
   });
 
   localStorage.setItem('livroCaixa', JSON.stringify(caixa));
 
-  let historico = JSON.parse(localStorage.getItem('orcamentos'));
-  const o = historico.find(x=>x.id===id);
-  if(o) o.pago = true;
+  o.pago = true;
   localStorage.setItem('orcamentos', JSON.stringify(historico));
 
   mostrarHistorico();
