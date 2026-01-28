@@ -110,6 +110,32 @@ li{padding:12px 0;border-bottom:1px solid #eee}
   <button class="btn history" onclick="mostrarHistorico()">Histórico</button>
   <button class="btn secondary" onclick="gerarPDF()">Gerar PDF</button>
 </div>
+<div class="section resumo-final" style="display:none">
+  <h2>Orçamento de Impressora</h2>
+
+  <p><strong>Cliente:</strong> <span id="pdfCliente"></span></p>
+  <p><strong>Impressora:</strong> <span id="pdfModelo"></span></p>
+  <p><strong>Data:</strong> <span id="pdfData"></span></p>
+
+  <table style="width:100%;margin-top:10px;border-collapse:collapse">
+    <thead>
+      <tr>
+        <th style="text-align:left;border-bottom:1px solid #ccc">Serviço</th>
+        <th style="text-align:right;border-bottom:1px solid #ccc">Valor</th>
+      </tr>
+    </thead>
+    <tbody id="pdfServicos"></tbody>
+  </table>
+
+  <h3 style="text-align:right;margin-top:10px">
+    Total: R$ <span id="pdfTotal"></span>
+  </h3>
+
+  <p style="margin-top:15px">
+    <strong>Garantia:</strong><br>
+    Garantia de 90 dias para o serviço executado.
+  </p>
+</div>
 
 <!-- MODAL HISTÓRICO -->
 <div id="modal">
@@ -183,6 +209,33 @@ function calcular(){
   });
   document.getElementById('total').innerText =
     'R$ ' + total.toLocaleString('pt-BR',{minimumFractionDigits:2});
+document.getElementById('pdfCliente').innerText =
+  cliente.value || 'Não informado';
+
+document.getElementById('pdfModelo').innerText =
+  modelo.value || 'Não informado';
+
+document.getElementById('pdfData').innerText =
+  new Date().toLocaleString('pt-BR');
+
+const tbody = document.getElementById('pdfServicos');
+tbody.innerHTML = '';
+
+document.querySelectorAll('.linha-servico').forEach(l=>{
+  if(l.children[0].checked){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${l.children[1].textContent}</td>
+      <td style="text-align:right">
+        R$ ${Number(l.children[2].value).toLocaleString('pt-BR',{minimumFractionDigits:2})}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+});
+
+document.getElementById('pdfTotal').innerText =
+  document.getElementById('total').innerText.replace('R$ ','');
 }
 
 // ================= SALVAR =================
@@ -327,9 +380,20 @@ function gerarPDF(){
       Garantia de 90 dias para o serviço executado.
     </p>
   `;
+@media print {
+  body > *:not(.resumo-final) {
+    display: none !important;
+  }
 
-  document.body.appendChild(resumo);
-  window.print();
+  .resumo-final {
+    display: block !important;
+    background: white;
+    padding: 20px;
+  }
+
+  .btn {
+    display: none !important;
+  }
 }
 </script>
 </body>
