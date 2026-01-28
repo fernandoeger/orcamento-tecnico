@@ -663,25 +663,32 @@ function confirmarCompraPecas(orcamentoId) {
   let historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
   const orc = historico.find(o => o.id === orcamentoId);
 
-  if (!orc) {
-    alert('Orçamento não encontrado.');
-    return;
-  }
-
-  if (orc.pago) {
-    alert('Este orçamento já está marcado como pago.');
-    return;
-  }
+  if (!orc || orc.pago) return;
 
   if (!confirm('Confirmar o pagamento deste orçamento?')) return;
 
   const caixa = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
 
+  // 🔑 pega o total já calculado (ex: "R$ 350,00")
+  const valorTexto = orc.totalTexto || orc.total || '0';
+  const valorNumerico = parseFloat(
+    valorTexto
+      .replace('R$', '')
+      .replace(/\./g, '')
+      .replace(',', '.')
+      .trim()
+  );
+
+  if (!valorNumerico || valorNumerico <= 0) {
+    alert('Erro ao obter valor do orçamento.');
+    return;
+  }
+
   caixa.unshift({
     id: Date.now(),
     tipo: 'entrada',
     descricao: `Pagamento orçamento - ${orc.cliente || 'Cliente'}`,
-    valor: calcularTotalOrcamento(orc),
+    valor: valorNumerico,
     data: new Date().toLocaleString('pt-BR')
   });
 
