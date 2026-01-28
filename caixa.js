@@ -1,3 +1,7 @@
+import {
+  collection,
+  addDoc
+} from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 // ================== STORAGE ==================
 function getCaixa() {
   return JSON.parse(localStorage.getItem('livroCaixa') || '[]');
