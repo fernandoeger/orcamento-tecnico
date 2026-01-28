@@ -238,3 +238,5 @@ function confirmarPagamento(id){
 window.salvarOrcamento = salvarOrcamento;
 window.mostrarHistorico = mostrarHistorico;
 window.fecharHistorico = fecharHistorico;
+
+alert(localStorage.getItem('orcamentos'));
