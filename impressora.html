@@ -41,15 +41,24 @@
     }
     .btn.secondary{background:#6c757d}
     .btn.history{background:#28a745}
+    
     .linha-servico{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      margin-bottom:8px;
-    }
-    .linha-servico input[type="number"]{
-      width:120px;
-    }
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:8px;
+  flex-wrap: wrap;          /* 👈 permite quebrar linha */
+}
+
+.linha-servico span{
+  flex: 1;                  /* 👈 texto ocupa espaço correto */
+  word-break: break-word;   /* 👈 quebra texto grande */
+}
+
+.linha-servico input[type="number"]{
+  width:100%;
+  max-width:120px;
+}
     ul{list-style:none;padding:0}
     li{padding:10px 0;border-bottom:1px solid #eee}
   </style>
