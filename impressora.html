@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Orçamento Impressora</title>
+<title>Orçamento de Impressora</title>
 
 <style>
 body{
@@ -44,7 +44,7 @@ input{
 .btn.secondary{background:#6c757d}
 .btn.history{background:#28a745}
 
-/* ===== SERVIÇOS (GRID – iOS SAFE) ===== */
+/* ===== SERVIÇOS ===== */
 .linha-servico{
   display:grid;
   grid-template-columns: 28px 1fr;
@@ -60,7 +60,6 @@ input{
 }
 .linha-servico .valor{
   margin-top:6px;
-  width:100%;
   max-width:160px;
 }
 
@@ -68,18 +67,19 @@ input{
 ul{list-style:none;padding:0}
 li{padding:12px 0;border-bottom:1px solid #eee}
 
-#modal{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.6);
-}
-#modal .box{
-  background:#fff;
-  margin:40px auto;
-  padding:20px;
-  max-width:700px;
-  border-radius:10px;
+/* ===== PDF ===== */
+@media print {
+  body > *:not(.resumo-final) {
+    display: none !important;
+  }
+  .resumo-final {
+    display: block !important;
+    background: white;
+    padding: 20px;
+  }
+  .btn {
+    display: none !important;
+  }
 }
 </style>
 </head>
@@ -108,8 +108,10 @@ li{padding:12px 0;border-bottom:1px solid #eee}
   <button class="btn" onclick="calcular()">Calcular</button>
   <button class="btn secondary" onclick="salvarOrcamento()">Salvar Orçamento</button>
   <button class="btn history" onclick="mostrarHistorico()">Histórico</button>
-  <button class="btn secondary" onclick="gerarPDF()">Gerar PDF</button>
+  <button class="btn secondary" onclick="window.print()">Gerar PDF</button>
 </div>
+
+<!-- PDF -->
 <div class="section resumo-final" style="display:none">
   <h2>Orçamento de Impressora</h2>
 
@@ -137,9 +139,9 @@ li{padding:12px 0;border-bottom:1px solid #eee}
   </p>
 </div>
 
-<!-- MODAL HISTÓRICO -->
-<div id="modal">
-  <div class="box">
+<!-- HISTÓRICO -->
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6)">
+  <div style="background:#fff;margin:40px auto;padding:20px;max-width:700px;border-radius:10px">
     <h3>Histórico de Impressoras</h3>
     <ul id="listaHistorico"></ul>
     <button class="btn secondary" onclick="fecharHistorico()">Fechar</button>
@@ -147,7 +149,7 @@ li{padding:12px 0;border-bottom:1px solid #eee}
 </div>
 
 <script>
-// ================= SERVIÇOS PADRÃO =================
+// ===== SERVIÇOS =====
 const SERVICOS_IMPRESSORA = {
   "Instalação USB": 50,
   "Instalação Wi-Fi": 80,
@@ -159,11 +161,9 @@ const SERVICOS_IMPRESSORA = {
   "Diagnóstico / Teste": 40
 };
 
-// ================= RENDER =================
 function renderizarServicos(){
   const div = document.getElementById('servicos');
   div.innerHTML = '';
-
   for(const [nome, valor] of Object.entries(SERVICOS_IMPRESSORA)){
     const linha = document.createElement('div');
     linha.className = 'linha-servico';
@@ -192,14 +192,12 @@ function renderizarServicos(){
 
     bloco.appendChild(nomeDiv);
     bloco.appendChild(inp);
-
     linha.appendChild(chk);
     linha.appendChild(bloco);
     div.appendChild(linha);
   }
 }
 
-// ================= CALCULAR =================
 function calcular(){
   let total = 0;
   document.querySelectorAll('.linha-servico').forEach(l=>{
@@ -209,192 +207,107 @@ function calcular(){
   });
   document.getElementById('total').innerText =
     'R$ ' + total.toLocaleString('pt-BR',{minimumFractionDigits:2});
-document.getElementById('pdfCliente').innerText =
-  cliente.value || 'Não informado';
 
-document.getElementById('pdfModelo').innerText =
-  modelo.value || 'Não informado';
+  // PDF
+  pdfCliente.innerText = cliente.value || 'Não informado';
+  pdfModelo.innerText = modelo.value || 'Não informado';
+  pdfData.innerText = new Date().toLocaleString('pt-BR');
 
-document.getElementById('pdfData').innerText =
-  new Date().toLocaleString('pt-BR');
+  const tbody = document.getElementById('pdfServicos');
+  tbody.innerHTML = '';
+  document.querySelectorAll('.linha-servico').forEach(l=>{
+    if(l.querySelector('input[type="checkbox"]').checked){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${l.querySelector('.nome').textContent}</td>
+        <td style="text-align:right">
+          R$ ${Number(l.querySelector('.valor').value)
+            .toLocaleString('pt-BR',{minimumFractionDigits:2})}
+        </td>`;
+      tbody.appendChild(tr);
+    }
+  });
 
-const tbody = document.getElementById('pdfServicos');
-tbody.innerHTML = '';
-
-document.querySelectorAll('.linha-servico').forEach(l=>{
-  if(l.children[0].checked){
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${l.children[1].textContent}</td>
-      <td style="text-align:right">
-        R$ ${Number(l.children[2].value).toLocaleString('pt-BR',{minimumFractionDigits:2})}
-      </td>
-    `;
-    tbody.appendChild(tr);
-  }
-});
-
-document.getElementById('pdfTotal').innerText =
-  document.getElementById('total').innerText.replace('R$ ','');
+  pdfTotal.innerText =
+    total.toLocaleString('pt-BR',{minimumFractionDigits:2});
 }
 
-// ================= SALVAR =================
 function salvarOrcamento(){
-  const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+  const historico = JSON.parse(localStorage.getItem('orcamentos')||'[]');
   const servicos = [];
-
   document.querySelectorAll('.linha-servico').forEach(l=>{
     if(l.querySelector('input[type="checkbox"]').checked){
       servicos.push({
-        nome: l.querySelector('.nome').textContent,
-        valor: Number(l.querySelector('.valor').value)
+        nome:l.querySelector('.nome').textContent,
+        valor:Number(l.querySelector('.valor').value)
       });
     }
   });
-
   historico.unshift({
-    id: Date.now(),
-    tipoServico: 'impressora',
-    cliente: cliente.value,
-    equipamento: modelo.value,
+    id:Date.now(),
+    tipoServico:'impressora',
+    cliente:cliente.value,
+    equipamento:modelo.value,
     servicos,
-    pago: false
+    pago:false
   });
-
-  localStorage.setItem('orcamentos', JSON.stringify(historico));
-  alert('Orçamento de impressora salvo!');
+  localStorage.setItem('orcamentos',JSON.stringify(historico));
+  alert('Orçamento salvo!');
 }
 
-// ================= HISTÓRICO =================
 function mostrarHistorico(){
-  const ul = document.getElementById('listaHistorico');
-  ul.innerHTML = '';
-
-  const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]')
-    .filter(o => o.tipoServico === 'impressora');
+  const ul=document.getElementById('listaHistorico');
+  ul.innerHTML='';
+  const historico=JSON.parse(localStorage.getItem('orcamentos')||[])
+    .filter(o=>o.tipoServico==='impressora');
 
   historico.forEach(o=>{
-    let total = 0;
-    o.servicos.forEach(s => total += Number(s.valor || 0));
-
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <strong>${o.cliente || 'Cliente'}</strong><br>
-      ${o.equipamento || ''}<br>
+    let total=0;
+    o.servicos.forEach(s=>total+=Number(s.valor||0));
+    const li=document.createElement('li');
+    li.innerHTML=`
+      <strong>${o.cliente||'Cliente'}</strong><br>
+      ${o.equipamento||''}<br>
       Total: R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}
     `;
-
-    const btn = document.createElement('button');
-    btn.className = 'btn';
-    btn.textContent = o.pago ? '✔️ Pago' : '💰 Confirmar pagamento';
-    btn.disabled = o.pago;
-    btn.onclick = ()=>confirmarPagamento(o.id);
-
+    const btn=document.createElement('button');
+    btn.className='btn';
+    btn.textContent=o.pago?'✔️ Pago':'💰 Confirmar pagamento';
+    btn.disabled=o.pago;
+    btn.onclick=()=>confirmarPagamento(o.id);
     li.appendChild(btn);
     ul.appendChild(li);
   });
-
-  modal.style.display = 'block';
+  modal.style.display='block';
 }
 
-function fecharHistorico(){
-  modal.style.display = 'none';
-}
+function fecharHistorico(){modal.style.display='none';}
 
-// ================= LIVRO CAIXA =================
 function confirmarPagamento(id){
-  if(!confirm('Confirmar pagamento?')) return;
+  let historico=JSON.parse(localStorage.getItem('orcamentos')||[]);
+  const o=historico.find(x=>x.id===id);
+  if(!o||o.pago)return;
 
-  let historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
-  const o = historico.find(x => x.id === id);
-  if(!o || o.pago) return;
+  let total=0;
+  o.servicos.forEach(s=>total+=Number(s.valor||0));
 
-  let total = 0;
-  o.servicos.forEach(s => total += Number(s.valor || 0));
-
-  const caixa = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
+  const caixa=JSON.parse(localStorage.getItem('livroCaixa')||[]);
   caixa.unshift({
-    id: Date.now(),
-    tipo: 'entrada',
-    descricao: `Pagamento impressora - ${o.equipamento || ''}`,
-    valor: total,
-    data: new Date().toLocaleString('pt-BR')
+    id:Date.now(),
+    tipo:'entrada',
+    descricao:`Pagamento impressora - ${o.equipamento||''}`,
+    valor:total,
+    data:new Date().toLocaleString('pt-BR')
   });
 
-  localStorage.setItem('livroCaixa', JSON.stringify(caixa));
-
-  o.pago = true;
-  localStorage.setItem('orcamentos', JSON.stringify(historico));
-
+  localStorage.setItem('livroCaixa',JSON.stringify(caixa));
+  o.pago=true;
+  localStorage.setItem('orcamentos',JSON.stringify(historico));
   mostrarHistorico();
 }
 
-document.addEventListener('DOMContentLoaded', renderizarServicos);
-<script>
-function gerarPDF(){
-  document.querySelector('.resumo-final')?.remove();
-
-  const resumo = document.createElement('div');
-  resumo.className = 'resumo-final';
-
-  let total = 0;
-  let linhas = '';
-
-  document.querySelectorAll('.linha-servico').forEach(l=>{
-    if(l.children[0].checked){
-      const nome = l.children[1].innerText;
-      const valor = Number(l.children[2].value || 0);
-      total += valor;
-      linhas += `
-        <tr>
-          <td>${nome}</td>
-          <td style="text-align:right">R$ ${valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-        </tr>`;
-    }
-  });
-
-  resumo.innerHTML = `
-    <h2>Orçamento de Impressora</h2>
-    <p><strong>Cliente:</strong> ${cliente.value || '-'}</p>
-    <p><strong>Impressora:</strong> ${modelo.value || '-'}</p>
-    <p><strong>Data:</strong> ${new Date().toLocaleString('pt-BR')}</p>
-
-    <table style="width:100%;border-collapse:collapse;margin-top:10px">
-      <thead>
-        <tr>
-          <th style="border-bottom:1px solid #000;text-align:left">Serviço</th>
-          <th style="border-bottom:1px solid #000;text-align:right">Valor</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${linhas || '<tr><td colspan="2">Nenhum serviço selecionado</td></tr>'}
-      </tbody>
-    </table>
-
-    <h3 style="text-align:right;margin-top:10px">
-      Total: R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}
-    </h3>
-
-    <p style="margin-top:20px">
-      <strong>Garantia:</strong><br>
-      Garantia de 90 dias para o serviço executado.
-    </p>
-  `;
-@media print {
-  body > *:not(.resumo-final) {
-    display: none !important;
-  }
-
-  .resumo-final {
-    display: block !important;
-    background: white;
-    padding: 20px;
-  }
-
-  .btn {
-    display: none !important;
-  }
-}
+document.addEventListener('DOMContentLoaded',renderizarServicos);
 </script>
+
 </body>
 </html>
