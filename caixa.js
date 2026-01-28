@@ -30,20 +30,20 @@ export async function salvarMovimento() {
   }
 
   const movimento = {
-    id: Date.now().toString(), // id único
-    tipo,                      // entrada | saida
+    id: Date.now().toString(), // ID único
+    tipo,
     descricao,
     valor,
     data: new Date().toLocaleString('pt-BR'),
     criadoEm: Date.now()
   };
 
-  // 👉 salva LOCAL primeiro (nunca perde)
+  // 🔹 SALVA LOCAL (nunca perde)
   const local = getLocal();
   local.unshift(movimento);
   setLocal(local);
 
-  // 👉 tenta salvar ONLINE
+  // 🔹 TENTA SALVAR ONLINE
   try {
     await addDoc(collection(window.db, 'livroCaixa'), movimento);
   } catch (e) {
@@ -58,7 +58,26 @@ export async function salvarMovimento() {
 
 window.salvarMovimento = salvarMovimento;
 
-// ================== RENDER ==================
+// ================== EXCLUIR MOVIMENTO ==================
+async function excluirMovimento(id) {
+  if (!confirm('Deseja excluir este movimento?')) return;
+
+  // 🔴 LOCAL
+  let caixa = getLocal();
+  caixa = caixa.filter(item => item.id !== id);
+  setLocal(caixa);
+
+  // 🔴 FIRESTORE
+  try {
+    await deleteDoc(doc(window.db, 'livroCaixa', id));
+  } catch (e) {
+    // pode não existir online, ignora
+  }
+
+  renderTudo(caixa);
+}
+
+// ================== RENDER GERAL ==================
 function renderTudo(lista) {
   let entradas = 0;
   let saidas = 0;
@@ -80,6 +99,7 @@ function renderTudo(lista) {
   renderLista(lista);
 }
 
+// ================== LISTA ==================
 function renderLista(lista) {
   const ul = document.getElementById('lista');
   ul.innerHTML = '';
@@ -89,7 +109,7 @@ function renderLista(lista) {
     return;
   }
 
-  lista.forEach((i, index) => {
+  lista.forEach(i => {
     const li = document.createElement('li');
     li.style.display = 'flex';
     li.style.justifyContent = 'space-between';
@@ -103,11 +123,12 @@ function renderLista(lista) {
       <small>${i.data}</small>
     `;
 
+    const direita = document.createElement('div');
+    direita.style.textAlign = 'right';
+
     const valor = document.createElement('div');
-    valor.style.textAlign = 'right';
-    valor.innerHTML = `
-      R$ ${Number(i.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-    `;
+    valor.innerHTML =
+      'R$ ' + Number(i.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
     const btnExcluir = document.createElement('button');
     btnExcluir.textContent = '🗑️';
@@ -119,30 +140,24 @@ function renderLista(lista) {
     btnExcluir.style.borderRadius = '6px';
     btnExcluir.style.cursor = 'pointer';
 
-    btnExcluir.onclick = () => {
-      if (!confirm('Deseja excluir este movimento?')) return;
+    btnExcluir.onclick = () => excluirMovimento(i.id);
 
-      const caixa = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
-      caixa.splice(index, 1);
-      localStorage.setItem('livroCaixa', JSON.stringify(caixa));
-      atualizarResumoFirestore(caixa);
-    };
-
-    valor.appendChild(btnExcluir);
+    direita.appendChild(valor);
+    direita.appendChild(btnExcluir);
 
     li.appendChild(info);
-    li.appendChild(valor);
+    li.appendChild(direita);
     ul.appendChild(li);
   });
 }
 
 // ================== SINCRONIZAÇÃO ==================
 function iniciarSync() {
-  // 1️⃣ mostra o que já existe local
+  // 1️⃣ mostra LOCAL primeiro
   const local = getLocal();
   renderTudo(local);
 
-  // 2️⃣ escuta o Firestore
+  // 2️⃣ escuta FIRESTORE
   const q = query(
     collection(window.db, 'livroCaixa'),
     orderBy('criadoEm', 'desc')
@@ -151,19 +166,17 @@ function iniciarSync() {
   onSnapshot(q, snapshot => {
     const online = [];
     snapshot.forEach(doc => {
-      online.push(doc.data());
+      online.push({ id: doc.id, ...doc.data() });
     });
 
-    // junta SEM duplicar
+    // junta sem duplicar
     const combinado = [...online];
-
     local.forEach(l => {
       if (!online.some(o => o.id === l.id)) {
         combinado.push(l);
       }
     });
 
-    // ordena do mais novo pro mais antigo
     combinado.sort((a, b) => b.criadoEm - a.criadoEm);
 
     setLocal(combinado);
