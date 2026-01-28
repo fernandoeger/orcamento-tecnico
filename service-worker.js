@@ -2,6 +2,8 @@ const CACHE_NAME = 'orcamento-cache-v2';
 
 const ASSETS = [
   './index.html',
+  './caixa.html',
+  './caixa.js',
   './manifest.json',
   './orcamento.js',
   './icon-192.png',
