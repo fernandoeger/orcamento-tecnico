@@ -56,5 +56,24 @@
 </div>
 
 <script src="orcamento-pc.js"></script>
+<div id="modalHistorico" style="
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.6);
+  z-index:9999
+">
+  <div style="
+    background:#fff;
+    margin:40px auto;
+    padding:20px;
+    max-width:700px;
+    border-radius:8px
+  ">
+    <h3>Histórico de Orçamentos</h3>
+    <ul id="listaHistorico"></ul>
+    <button class="btn secondary" onclick="fecharHistorico()">Fechar</button>
+  </div>
+</div>
 </body>
 </html>
