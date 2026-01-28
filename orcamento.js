@@ -63,18 +63,51 @@ function recalcular() {
 }
 
 function salvarOrcamento() {
-  const total = document.getElementById('custo').innerText;
+  const cliente = document.getElementById('cliente')?.value || '';
+  const aparelho = document.getElementById('descricaoAparelho')?.value || '';
+  const totalTexto = document.getElementById('custo').innerText;
+
+  const servicos = [];
+  document.querySelectorAll('#servicosContainer .servico-item').forEach(div => {
+    const checkbox = div.querySelector('input[type="checkbox"]');
+    const input = div.querySelector('input[type="number"]');
+
+    servicos.push({
+      nome: input.getAttribute('data-item'),
+      selecionado: checkbox.checked,
+      valor: parseFloat(input.value) || 0
+    });
+  });
+
+  const pecas = [];
+  document.querySelectorAll('input.peca').forEach(input => {
+    pecas.push({
+      nome: input.getAttribute('data-item'),
+      valor: parseFloat(input.value) || 0
+    });
+  });
+
   const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
 
   historico.unshift({
     id: Date.now(),
     data: new Date().toLocaleString('pt-BR'),
-    total
+    cliente,
+    aparelho,
+    servicos,
+    pecas,
+    totalTexto,
+
+    // 👇 estados (IMPORTANTE)
+    fechado: false,
+    pecasCompradas: false,
+    pago: false
   });
 
   localStorage.setItem('orcamentos', JSON.stringify(historico));
-  alert('Orçamento salvo!');
+  alert('Orçamento salvo com sucesso!');
 }
+
 
 // ================== LIVRO CAIXA ==================
 
