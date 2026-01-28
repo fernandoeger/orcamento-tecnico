@@ -11,147 +11,102 @@ const SERVICOS = {
   "Troca de teclado (mão de obra)": 90,
   "Instalação de drivers": 50
 };
+const PECAS = [
+  "SSD","HD","Memória RAM","Bateria","Teclado","Tela / Display",
+  "Flat da tela","Alto-falante","Webcam","Cooler","DC Jack",
+  "Carcaça","Touchpad","Placa Wi-Fi","Placa Bluetooth",
+  "Microfone","Dobradiças","BIOS","Placa-mãe",
+  "Fonte","Placa de vídeo","Processador","Cooler CPU",
+  "Gabinete","Ventoinhas","Cabo SATA"
+];
 
-// ================= STORAGE =================
-function getOrcamentos(){
-  return JSON.parse(localStorage.getItem('orcamentos')||'[]');
-}
-function setOrcamentos(v){
-  localStorage.setItem('orcamentos',JSON.stringify(v));
-}
-
-// ================= RENDER SERVIÇOS =================
+// ================= RENDER =================
 function renderServicos(){
   const div = document.getElementById('servicos');
   div.innerHTML='';
-
   for(const [nome,valor] of Object.entries(SERVICOS)){
-    const linha = document.createElement('div');
-    linha.innerHTML = `
+    div.innerHTML+=`
       <label>
-        <input type="checkbox" data-nome="${nome}">
-        ${nome}
+        <input type="checkbox" data-valor="${valor}">
+        ${nome} (R$ ${valor})
       </label>
-      <input type="number" value="${valor}" disabled>
     `;
-
-    const chk = linha.querySelector('input[type=checkbox]');
-    const inp = linha.querySelector('input[type=number]');
-
-    chk.onchange = ()=>{
-      inp.disabled = !chk.checked;
-      if(!chk.checked) inp.value = 0;
-      recalcular();
-    };
-    inp.oninput = recalcular;
-
-    div.appendChild(linha);
   }
 }
 
-// ================= CALCULAR =================
+function renderPecas(){
+  const div = document.getElementById('pecas');
+  div.innerHTML='';
+  PECAS.forEach(p=>{
+    div.innerHTML+=`
+      <label>${p}</label>
+      <input type="number" class="peca" data-nome="${p}" placeholder="Custo">
+    `;
+  });
+}
+
+// ================= CÁLCULO =================
 function recalcular(){
   let total = 0;
 
-  if(document.getElementById('chkMaoObra').checked){
-    total += Number(document.getElementById('valorMaoObra').value||0);
-  }
-
-  document.querySelectorAll('#servicos div').forEach(l=>{
-    if(l.querySelector('input[type=checkbox]').checked){
-      total += Number(l.querySelector('input[type=number]').value||0);
-    }
+  document.querySelectorAll('#servicos input[type="checkbox"]').forEach(c=>{
+    if(c.checked) total += Number(c.dataset.valor);
   });
 
+  if(chkMaoObra.checked){
+    total += Number(valorMaoObra.value||0);
+  }
+
   document.querySelectorAll('.peca').forEach(p=>{
-    total += Number(p.value||0);
+    const custo = Number(p.value||0);
+    if(custo>0) total += custo*1.3;
   });
 
   document.getElementById('total').innerText =
-    total.toLocaleString('pt-BR',{minimumFractionDigits:2});
+    'R$ '+total.toLocaleString('pt-BR',{minimumFractionDigits:2});
 }
 
 // ================= SALVAR =================
 function salvarOrcamento(){
   const itens = [];
-
-  if(document.getElementById('chkMaoObra').checked){
-    itens.push({nome:'Mão de obra',valor:Number(valorMaoObra.value)});
-  }
-
-  document.querySelectorAll('#servicos div').forEach(l=>{
-    if(l.querySelector('input[type=checkbox]').checked){
-      itens.push({
-        nome:l.querySelector('input[type=checkbox]').dataset.nome,
-        valor:Number(l.querySelector('input[type=number]').value)
-      });
+  document.querySelectorAll('#servicos input[type="checkbox"]').forEach(c=>{
+    if(c.checked){
+      itens.push({nome:c.parentElement.textContent,valor:Number(c.dataset.valor)});
     }
   });
 
   document.querySelectorAll('.peca').forEach(p=>{
-    if(p.value>0){
-      itens.push({nome:p.dataset.nome,valor:Number(p.value)});
+    const custo = Number(p.value||0);
+    if(custo>0){
+      itens.push({nome:p.dataset.nome,valor:custo*1.3});
     }
   });
 
-  const orc = {
+  if(chkMaoObra.checked){
+    itens.push({nome:'Mão de obra',valor:Number(valorMaoObra.value)});
+  }
+
+  const h = JSON.parse(localStorage.getItem('orcamentos')||'[]');
+  h.unshift({
     id:Date.now(),
-    data:new Date().toLocaleString('pt-BR'),
     cliente:cliente.value,
     aparelho:aparelho.value,
-    itens,
-    pago:false
-  };
-
-  const h = getOrcamentos();
-  h.unshift(orc);
-  setOrcamentos(h);
-
-  alert('Orçamento salvo');
-}
-
-// ================= HISTÓRICO =================
-function mostrarHistorico(){
-  const ul = listaHistorico;
-  ul.innerHTML='';
-  getOrcamentos().forEach((o,i)=>{
-    const li = document.createElement('li');
-    const total = o.itens.reduce((s,x)=>s+x.valor,0);
-
-    li.innerHTML = `
-      <strong>${o.cliente||'Cliente'}</strong><br>
-      ${o.aparelho||''}<br>
-      Total: R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}
-    `;
-
-    const del = document.createElement('button');
-    del.textContent='🗑️';
-    del.className='btn danger';
-    del.onclick=()=>{
-      if(confirm('Excluir orçamento?')){
-        const h=getOrcamentos();
-        h.splice(i,1);
-        setOrcamentos(h);
-        mostrarHistorico();
-      }
-    };
-
-    li.appendChild(del);
-    ul.appendChild(li);
+    data:new Date().toLocaleString('pt-BR'),
+    itens
   });
-
-  historico.style.display='block';
-}
-function fecharHistorico(){
-  historico.style.display='none';
+  localStorage.setItem('orcamentos',JSON.stringify(h));
+  alert('Orçamento salvo');
 }
 
 // ================= INIT =================
 document.addEventListener('DOMContentLoaded',()=>{
   renderServicos();
-  recalcular();
+  renderPecas();
+
   chkMaoObra.onchange=()=>{
     valorMaoObra.disabled=!chkMaoObra.checked;
     recalcular();
   };
+
+  document.body.addEventListener('input',recalcular);
 });
