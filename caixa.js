@@ -70,37 +70,44 @@ function renderizarLista(caixa) {
   }
 
   caixa.forEach(item => {
-  const li = document.createElement('li');
+    const li = document.createElement('li');
 
-  li.innerHTML = `
-    <strong>${item.tipo === 'entrada' ? '➕ Entrada' : '➖ Saída'}</strong>
-    — ${item.descricao}<br>
-    <small>${item.data}</small>
-    <span style="float:right">
-      R$ ${item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-      <button 
-        style="margin-left:8px; background:#dc3545; color:#fff; border:none; border-radius:4px; padding:2px 6px; cursor:pointer;"
-        onclick="excluirMovimento(${item.id})"
-        title="Excluir movimento"
-      >🗑️</button>
-    </span>
-  `;
+    const titulo = document.createElement('strong');
+    titulo.textContent = item.tipo === 'entrada' ? '➕ Entrada' : '➖ Saída';
 
-  ul.appendChild(li);
-});
+    const texto = document.createElement('span');
+    texto.innerHTML = ` — ${item.descricao}<br><small>${item.data}</small>`;
+
+    const valor = document.createElement('span');
+    valor.style.float = 'right';
+    valor.textContent =
+      'R$ ' + item.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+    const btnExcluir = document.createElement('button');
+    btnExcluir.textContent = '🗑️';
+    btnExcluir.title = 'Excluir movimento';
+    btnExcluir.style.marginLeft = '8px';
+    btnExcluir.style.background = '#dc3545';
+    btnExcluir.style.color = '#fff';
+    btnExcluir.style.border = 'none';
+    btnExcluir.style.borderRadius = '4px';
+    btnExcluir.style.padding = '2px 6px';
+    btnExcluir.style.cursor = 'pointer';
+
+    btnExcluir.addEventListener('click', () => excluirMovimento(item.id));
+
+    valor.appendChild(btnExcluir);
+
+    li.appendChild(titulo);
+    li.appendChild(texto);
+    li.appendChild(valor);
+
+    ul.appendChild(li);
+  });
 }
 
-// ================== AUTO ATUALIZAÇÃO ==================
-
-// quando a página carrega
-document.addEventListener('DOMContentLoaded', atualizarResumo);
-
-// quando o app volta para a tela (iPhone / PWA / Safari)
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) {
-    atualizarResumo();
-  }
-  function excluirMovimento(id) {
+// ================== EXCLUIR ==================
+function excluirMovimento(id) {
   if (!confirm('Deseja excluir este movimento do caixa?')) return;
 
   let caixa = getCaixa();
@@ -109,4 +116,12 @@ document.addEventListener('visibilitychange', () => {
   salvarCaixa(caixa);
   atualizarResumo();
 }
+
+// ================== AUTO ATUALIZA ==================
+document.addEventListener('DOMContentLoaded', atualizarResumo);
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    atualizarResumo();
+  }
 });
