@@ -4,7 +4,7 @@ const ASSETS = [
   './index.html',
   './caixa.html',
   './impressora.html',
-  './orcamento-pc.js',
+  './orcamento-pc-v2.js',
   './caixa.js',
   './manifest.json',
   './icon-192.png',
