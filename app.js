@@ -121,9 +121,56 @@ function salvarOrcamento(){
   alert('Orçamento salvo com sucesso!');
 }
 
-function mostrarHistorico(){
-  alert('Histórico salvo no navegador (modo original)');
+function mostrarHistorico() {
+  const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+  const lista = document.getElementById('listaHistorico');
+  lista.innerHTML = '';
+
+  if (historico.length === 0) {
+    lista.innerHTML = '<li>Nenhum orçamento salvo ainda.</li>';
+  } else {
+    historico.forEach((orc, index) => {
+      const li = document.createElement('li');
+      li.style.display = 'flex';
+      li.style.justifyContent = 'space-between';
+      li.style.alignItems = 'flex-start';
+
+      const info = document.createElement('div');
+      info.style.flex = '1';
+      info.innerHTML = `
+        <strong>${orc.cliente || 'Cliente não informado'}</strong> - ${orc.aparelho || 'Sem descrição'}<br>
+        <small>${orc.data}</small>
+      `;
+      info.style.cursor = 'pointer';
+      info.onclick = () => carregarOrcamento(orc);
+
+      const btnExcluir = document.createElement('button');
+      btnExcluir.className = 'btn danger';
+      btnExcluir.style.padding = '4px 8px';
+      btnExcluir.style.fontSize = '0.8rem';
+      btnExcluir.style.marginLeft = '10px';
+      btnExcluir.textContent = '🗑️';
+      btnExcluir.title = 'Excluir este orçamento';
+      btnExcluir.onclick = (e) => {
+        e.stopPropagation();
+        if (confirm(`Excluir orçamento de "${orc.cliente || 'Cliente não informado'}" (${orc.data})?`)) {
+          let historicoAtual = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+          historicoAtual.splice(index, 1);
+          localStorage.setItem('orcamentos', JSON.stringify(historicoAtual));
+          mostrarHistorico();
+          alert('Orçamento excluído com sucesso!');
+        }
+      };
+
+      li.appendChild(info);
+      li.appendChild(btnExcluir);
+      lista.appendChild(li);
+    });
+  }
+
+  document.getElementById('modalHistorico').style.display = 'block';
 }
+
 
 document.addEventListener('DOMContentLoaded', () => {
   renderizarServicos();
