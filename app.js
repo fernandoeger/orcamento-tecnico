@@ -107,18 +107,41 @@ function recalcular(){
   });
 }
 
-function salvarOrcamento(){
-  const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
-
-  historico.unshift({
+function salvarOrcamento() {
+  const orcamento = {
+    id: Date.now(),
     data: new Date().toLocaleString('pt-BR'),
-    cliente: document.getElementById('cliente').value,
-    aparelho: document.getElementById('descricaoAparelho').value,
-    total: document.getElementById('custo').innerText
-  });
+    cliente: document.getElementById('cliente').value.trim(),
+    aparelho: document.getElementById('descricaoAparelho').value.trim(),
+    maoObraIncluida: document.getElementById('incluirMaoObra').checked,
+    valorMaoObra: parseFloat(document.getElementById('valorMaoObra').value) || 0,
+    servicos: Array.from(document.querySelectorAll('#servicosContainer .servico-item')).map(div => {
+      const checkbox = div.querySelector('input[type="checkbox"]');
+      const input = div.querySelector('input[type="number"]');
+      return {
+        nome: input.getAttribute('data-item'),
+        selecionado: checkbox.checked,
+        valor: parseFloat(input.value) || 0
+      };
+    }),
+    pecas: Array.from(document.querySelectorAll('input.peca')).map(input => ({
+      nome: input.getAttribute('data-item'),
+      valor: parseFloat(input.value) || 0
+    })),
+    outrosDesc: document.getElementById('outrosDesc').value.trim(),
+    observacoes: document.getElementById('observacoes').value.trim()
+  };
 
+  let historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+  historico.unshift(orcamento);
   localStorage.setItem('orcamentos', JSON.stringify(historico));
+
   alert('Orçamento salvo com sucesso!');
+  recalcular();
+}
+
+function fecharHistorico() {
+  document.getElementById('modalHistorico').style.display = 'none';
 }
 
 function mostrarHistorico() {
