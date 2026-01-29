@@ -119,6 +119,26 @@ function renderLista(lista) {
   });
 }
 
+function gerarResumoMensal(ano, mes) {
+  const caixa = getCaixa();
+  let entradas = 0;
+  let saidas = 0;
+
+  caixa.forEach(m => {
+    const d = new Date(m.data.split(',')[0].split('/').reverse().join('-'));
+    if (d.getFullYear() === ano && d.getMonth() === mes) {
+      if (m.tipo === 'entrada') entradas += Number(m.valor);
+      if (m.tipo === 'saida') saidas += Number(m.valor);
+    }
+  });
+
+  return {
+    entradas,
+    saidas,
+    lucro: entradas - saidas
+  };
+}
+
 // ================== INIT ==================
 document.addEventListener('DOMContentLoaded', () => {
   const caixa = getCaixa();
