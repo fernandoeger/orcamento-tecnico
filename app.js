@@ -229,35 +229,6 @@ function carregarOrcamento(orc) {
     });
   }
 
-function lancarNoCaixa() {
-  const totalText = document.getElementById('custo').innerText;
-  const valor = Number(
-    totalText.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()
-  );
-
-  if (!valor || valor <= 0) {
-    alert('Calcule o orçamento antes de lançar no caixa.');
-    return;
-  }
-
-  const cliente = document.getElementById('cliente').value.trim() || 'Cliente não informado';
-  const aparelho = document.getElementById('descricaoAparelho').value.trim() || 'Aparelho não informado';
-
-  const movimento = {
-    tipo: 'entrada',
-    descricao: `Orçamento – ${cliente} (${aparelho})`,
-    valor,
-    data: new Date().toLocaleString('pt-BR')
-  };
-
-  // grava pendente
-  localStorage.setItem('caixa_pendente', JSON.stringify(movimento));
-
-  // 🔥 ABRE O CAIXA AUTOMATICAMENTE
-  window.location.href = 'caixa.html';
-}
-
-
   // salva pendente
   localStorage.setItem('caixa_pendente', JSON.stringify(movimento));
 
