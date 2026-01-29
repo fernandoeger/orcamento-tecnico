@@ -238,6 +238,74 @@ function carregarOrcamento(orc) {
   document.getElementById('modalHistorico').style.display = 'block';
 }
 
+function calcularTotalOrcamento(orc) {
+  let total = 0;
+
+  if (orc.maoObraIncluida) {
+    total += Number(orc.valorMaoObra || 0);
+  }
+
+  if (Array.isArray(orc.servicos)) {
+    orc.servicos.forEach(s => {
+      if (s.selecionado) total += Number(s.valor || 0);
+    });
+  }
+
+  if (Array.isArray(orc.pecas)) {
+    orc.pecas.forEach(p => {
+      total += Number(p.valor || 0) * 1.25;
+    });
+  }
+
+  return total;
+}
+
+function lancarSaidaNoCaixa(orc) {
+  const valor = calcularTotalOrcamento(orc);
+
+  if (!valor || valor <= 0) {
+    alert('Orçamento sem valor.');
+    return;
+  }
+
+  const movimento = {
+    tipo: 'saida',
+    descricao: `Peças – ${orc.cliente || 'Cliente'} (${orc.aparelho || 'Aparelho'})`,
+    valor,
+    data: new Date().toLocaleString('pt-BR')
+  };
+
+  salvarNoCaixa(movimento);
+  alert('Saída lançada no Caixa.');
+}
+
+function lancarEntradaNoCaixa(orc) {
+  const valor = calcularTotalOrcamento(orc);
+
+  if (!valor || valor <= 0) {
+    alert('Orçamento sem valor.');
+    return;
+  }
+
+  const movimento = {
+    tipo: 'entrada',
+    descricao: `Pagamento – ${orc.cliente || 'Cliente'} (${orc.aparelho || 'Aparelho'})`,
+    valor,
+    data: new Date().toLocaleString('pt-BR')
+  };
+
+  salvarNoCaixa(movimento);
+  alert('Entrada lançada no Caixa.');
+}
+
+function salvarNoCaixa(movimento) {
+  const caixa = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
+  caixa.unshift({
+    id: Date.now().toString(),
+    ...movimento
+  });
+  localStorage.setItem('livroCaixa', JSON.stringify(caixa));
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   renderizarServicos();
