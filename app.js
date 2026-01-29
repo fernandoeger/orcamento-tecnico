@@ -11,67 +11,95 @@ const PRECOS_SUGERIDOS = {
 };
 
 function formatBR(value){
-  return (parseFloat(value)||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  const numericValue = parseFloat(value) || 0;
+  return numericValue.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function sumValues(selector){
+  const nodes = document.querySelectorAll(selector);
+  return Array.from(nodes)
+    .map(i => parseFloat(i.value || 0))
+    .reduce((a, b) => a + b, 0);
 }
 
 function renderizarServicos() {
   const container = document.getElementById('servicosContainer');
-  for (const [nome, preco] of Object.entries(PRECOS_SUGERIDOS)) {
+  container.innerHTML = '';
+
+  for (const [servico, preco] of Object.entries(PRECOS_SUGERIDOS)) {
     const div = document.createElement('div');
+    div.className = 'servico-item';
     div.innerHTML = `
-      <label>
-        <input type="checkbox" data-nome="${nome}">
-        ${nome}
-      </label>
-      <input type="number" value="${preco}" disabled>
+      <input type="checkbox" data-item="${servico}">
+      <label>${servico}</label>
+      <input type="number" class="valor servico" data-item="${servico}" value="${preco}" disabled>
     `;
-    const checkbox = div.querySelector('input[type=checkbox]');
-    const input = div.querySelector('input[type=number]');
-    checkbox.onchange = () => {
-      input.disabled = !checkbox.checked;
-      if (!checkbox.checked) input.value = 0;
-      recalcular();
-    };
-    input.oninput = recalcular;
     container.appendChild(div);
   }
+
+  document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', function () {
+      const input = this.parentElement.querySelector('input[type="number"]');
+      input.disabled = !this.checked;
+      if (!this.checked) input.value = 0;
+      recalcular();
+    });
+  });
+
+  document.querySelectorAll('#servicosContainer input[type="number"]').forEach(input => {
+    input.addEventListener('input', recalcular);
+  });
 }
 
-function recalcular(){
-  let total = 0;
+function getItensCobrados(){
+  const itens = [];
 
-  document.querySelectorAll('#servicosContainer input[type=checkbox]').forEach(cb=>{
-    if(cb.checked){
-      total += parseFloat(cb.parentElement.nextElementSibling.value||0);
+  if (document.getElementById('incluirMaoObra').checked) {
+    const valor = parseFloat(document.getElementById('valorMaoObra').value || 0);
+    if (valor > 0) itens.push({ nome: 'Mão de Obra', valor });
+  }
+
+  document.querySelectorAll('#servicosContainer .servico-item').forEach(div => {
+    const cb = div.querySelector('input[type="checkbox"]');
+    const input = div.querySelector('input[type="number"]');
+    if (cb.checked) {
+      const valor = parseFloat(input.value || 0);
+      if (valor > 0) itens.push({ nome: input.dataset.item, valor });
     }
   });
 
-  document.querySelectorAll('.peca').forEach(p=>{
-    total += (parseFloat(p.value||0) * 1.25);
+  document.querySelectorAll('input.peca').forEach(input => {
+    const valor = parseFloat(input.value || 0);
+    if (valor > 0) {
+      let nome = input.dataset.item;
+      if (nome === 'Outros' && document.getElementById('outrosDesc').value.trim()) {
+        nome = `Outros (${document.getElementById('outrosDesc').value.trim()})`;
+      }
+      itens.push({ nome, valor: valor * 1.25 });
+    }
   });
 
-  if(document.getElementById('incluirMaoObra').checked){
-    total += parseFloat(document.getElementById('valorMaoObra').value||0);
+  return itens;
+}
+
+function recalcular(){
+  const itens = getItensCobrados();
+  const total = itens.reduce((s, i) => s + i.valor, 0);
+  document.getElementById('custo').innerText = 'R$ ' + formatBR(total);
+
+  const tbody = document.querySelector('#cobrancaTable tbody');
+  tbody.innerHTML = '';
+
+  if (!itens.length) {
+    const row = tbody.insertRow();
+    row.insertCell().innerText = 'Nenhum item/serviço cobrado.';
+    row.insertCell().innerText = '';
+    return;
   }
 
-  document.getElementById('custo').innerText = 'R$ ' + formatBR(total);
-}
-
-function salvarOrcamento(){
-  const lista = JSON.parse(localStorage.getItem('orcamentos')||'[]');
-  lista.unshift({
-    data: new Date().toLocaleString('pt-BR'),
-    total: document.getElementById('custo').innerText
-  });
-  localStorage.setItem('orcamentos',JSON.stringify(lista));
-  alert('Salvo!');
-}
-
-function mostrarHistorico(){
-  alert('Histórico salvo no navegador');
-}
-
-document.addEventListener('DOMContentLoaded',()=>{
-  renderizarServicos();
-  recalcular();
-});
+  itens.forEach(item => {
+    const row = tbody.insertRow();
+    row.ins
