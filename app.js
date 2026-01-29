@@ -52,8 +52,8 @@ function renderizarServicos() {
 function getItensCobrados(){
   const itens = [];
 
-  if (document.getElementById('incluirMaoObra').checked) {
-    const v = Number(document.getElementById('valorMaoObra').value || 0);
+  if (incluirMaoObra.checked) {
+    const v = Number(valorMaoObra.value || 0);
     if (v > 0) itens.push({ nome: 'Mão de Obra', valor: v });
   }
 
@@ -69,8 +69,8 @@ function getItensCobrados(){
     const v = Number(input.value || 0);
     if (v > 0) {
       let nome = input.dataset.item;
-      if (nome === 'Outros' && document.getElementById('outrosDesc').value.trim()) {
-        nome = `Outros (${document.getElementById('outrosDesc').value.trim()})`;
+      if (nome === 'Outros' && outrosDesc.value.trim()) {
+        nome = `Outros (${outrosDesc.value.trim()})`;
       }
       itens.push({ nome, valor: v * 1.25 });
     }
@@ -83,7 +83,7 @@ function getItensCobrados(){
 function recalcular(){
   const itens = getItensCobrados();
   const total = itens.reduce((s,i)=>s+i.valor,0);
-  document.getElementById('custo').innerText = 'R$ ' + formatBR(total);
+  custo.innerText = 'R$ ' + formatBR(total);
 
   const tbody = document.querySelector('#cobrancaTable tbody');
   tbody.innerHTML = '';
@@ -109,9 +109,9 @@ function salvarOrcamento(){
     data: new Date().toLocaleString('pt-BR'),
     cliente: cliente.value.trim(),
     aparelho: descricaoAparelho.value.trim(),
-    status: 'aberto',        // aberto | pago
-    saidaLancada: false,    // controle de saída
-    entradaLancada: false   // controle de entrada
+    status: 'aberto',
+    saidaLancada: false,
+    entradaLancada: false,
     maoObraIncluida: incluirMaoObra.checked,
     valorMaoObra: Number(valorMaoObra.value||0),
     servicos: [...document.querySelectorAll('#servicosContainer .servico-item')].map(div=>{
@@ -135,11 +135,10 @@ function salvarOrcamento(){
 // ================== HISTÓRICO ==================
 function mostrarHistorico(){
   const h = JSON.parse(localStorage.getItem('orcamentos') || '[]');
-  const lista = listaHistorico;
-  lista.innerHTML = '';
+  listaHistorico.innerHTML = '';
 
   if (!h.length){
-    lista.innerHTML = '<li>Nenhum orçamento salvo.</li>';
+    listaHistorico.innerHTML = '<li>Nenhum orçamento salvo.</li>';
     modalHistorico.style.display = 'block';
     return;
   }
@@ -149,77 +148,46 @@ function mostrarHistorico(){
     li.style.borderBottom = '1px solid #eee';
     li.style.padding = '8px 0';
 
-    // ===== INFO =====
-    const info = document.createElement('div');
-    info.style.cursor = 'pointer';
-
     const statusTexto = orc.status === 'pago' ? 'PAGO' : 'EM ABERTO';
     const statusCor = orc.status === 'pago' ? 'green' : 'orange';
 
+    const info = document.createElement('div');
     info.innerHTML = `
       <strong>${orc.cliente || 'Cliente'}</strong> – ${orc.aparelho || ''}<br>
-      <small>${orc.data || ''}</small><br>
-      <small>
-        Status: <strong style="color:${statusCor}">${statusTexto}</strong>
-      </small>
+      <small>${orc.data}</small><br>
+      <small>Status: <strong style="color:${statusCor}">${statusTexto}</strong></small>
     `;
+    info.style.cursor='pointer';
+    info.onclick=()=>carregarOrcamento(orc);
 
-    info.onclick = () => carregarOrcamento(orc);
+    const acoes=document.createElement('div');
 
-    // ===== AÇÕES =====
-    const acoes = document.createElement('div');
-    acoes.style.marginTop = '6px';
-    acoes.style.display = 'flex';
-    acoes.style.gap = '6px';
-    acoes.style.flexWrap = 'wrap';
+    const b1=document.createElement('button');
+    b1.textContent='➖ Saída';
+    b1.onclick=e=>{e.stopPropagation();lancarSaidaNoCaixa(orc);mostrarHistorico();};
 
-    const b1 = document.createElement('button');
-    b1.textContent = '➖ Saída';
-    b1.onclick = e => {
+    const b2=document.createElement('button');
+    b2.textContent='➕ Entrada';
+    b2.onclick=e=>{e.stopPropagation();lancarEntradaNoCaixa(orc);mostrarHistorico();};
+
+    const bx=document.createElement('button');
+    bx.textContent='🗑️';
+    bx.onclick=e=>{
       e.stopPropagation();
-      lancarSaidaNoCaixa(orc);
+      h.splice(i,1);
+      localStorage.setItem('orcamentos',JSON.stringify(h));
       mostrarHistorico();
     };
 
-    const b2 = document.createElement('button');
-    b2.textContent = '➕ Entrada';
-    b2.onclick = e => {
-      e.stopPropagation();
-      lancarEntradaNoCaixa(orc);
-      mostrarHistorico();
-    };
+    if (orc.saidaLancada) b1.disabled = true;
+    if (orc.entradaLancada) b2.disabled = true;
 
-    const bx = document.createElement('button');
-    bx.textContent = '🗑️';
-    bx.onclick = e => {
-      e.stopPropagation();
-      if (!confirm('Excluir este orçamento?')) return;
-      h.splice(i, 1);
-      localStorage.setItem('orcamentos', JSON.stringify(h));
-      mostrarHistorico();
-    };
-
-    // ===== DESATIVAÇÃO VISUAL =====
-    if (orc.saidaLancada) {
-      b1.disabled = true;
-      b1.style.opacity = '0.5';
-      b1.style.cursor = 'not-allowed';
-    }
-
-    if (orc.entradaLancada) {
-      b2.disabled = true;
-      b2.style.opacity = '0.5';
-      b2.style.cursor = 'not-allowed';
-    }
-
-    acoes.append(b1, b2, bx);
-
-    li.appendChild(info);
-    li.appendChild(acoes);
-    lista.appendChild(li);
+    acoes.append(b1,b2,bx);
+    li.append(info,acoes);
+    listaHistorico.appendChild(li);
   });
 
-  modalHistorico.style.display = 'block';
+  modalHistorico.style.display='block';
 }
 
 // ================== CAIXA ==================
@@ -230,95 +198,48 @@ function calcularTotalOrcamento(orc){
   orc.pecas.forEach(p=>{ t+=p.valor*1.25; });
   return t;
 }
-// 🔹 Total REAL das peças (sem lucro)
-function calcularTotalPecasSemLucro(orc) {
-  let total = 0;
 
-  if (Array.isArray(orc.pecas)) {
-    orc.pecas.forEach(p => {
-      total += Number(p.valor || 0); // SEM * 1.25
-    });
-  }
-
-  return total;
+function calcularTotalPecasSemLucro(orc){
+  return orc.pecas.reduce((s,p)=>s+Number(p.valor||0),0);
 }
+
 function salvarNoCaixa(m){
   const c = JSON.parse(localStorage.getItem('livroCaixa')||'[]');
   c.unshift({id:Date.now(),...m});
   localStorage.setItem('livroCaixa',JSON.stringify(c));
 }
 
-function lancarEntradaNoCaixa(orc) {
-  if (orc.entradaLancada) {
-    alert('Entrada já lançada para este orçamento.');
-    return;
-  }
-
-  const valor = calcularTotalOrcamento(orc);
-  if (!valor || valor <= 0) {
-    alert('Orçamento sem valor.');
-    return;
-  }
-
+function lancarEntradaNoCaixa(orc){
+  if(orc.entradaLancada) return alert('Entrada já lançada.');
   salvarNoCaixa({
-    tipo: 'entrada',
-    descricao: `Pagamento – ${orc.cliente}`,
-    valor,
-    data: new Date().toLocaleString('pt-BR')
+    tipo:'entrada',
+    descricao:`Pagamento – ${orc.cliente}`,
+    valor:calcularTotalOrcamento(orc),
+    data:new Date().toLocaleString('pt-BR')
   });
-
-  orc.entradaLancada = true;
-  orc.status = 'pago';
+  orc.entradaLancada=true;
+  orc.status='pago';
   atualizarOrcamento(orc);
-
-  alert('Entrada lançada. Orçamento marcado como PAGO.');
 }
 
-function lancarSaidaNoCaixa(orc) {
-  if (orc.saidaLancada) {
-    alert('Saída já lançada para este orçamento.');
-    return;
-  }
-
-  const valor = calcularTotalPecasSemLucro(orc);
-  if (!valor || valor <= 0) {
-    alert('Orçamento não possui peças.');
-    return;
-  }
-
+function lancarSaidaNoCaixa(orc){
+  if(orc.saidaLancada) return alert('Saída já lançada.');
   salvarNoCaixa({
-    tipo: 'saida',
-    descricao: `Compra de peças – ${orc.cliente}`,
-    valor,
-    data: new Date().toLocaleString('pt-BR')
+    tipo:'saida',
+    descricao:`Compra de peças – ${orc.cliente}`,
+    valor:calcularTotalPecasSemLucro(orc),
+    data:new Date().toLocaleString('pt-BR')
   });
-
-  orc.saidaLancada = true;
+  orc.saidaLancada=true;
   atualizarOrcamento(orc);
-
-  alert('Saída lançada com sucesso.');
 }
 
-  salvarNoCaixa({
-    tipo: 'entrada',
-    descricao: `Pagamento – ${orc.cliente || 'Cliente'} (${orc.aparelho || ''})`,
-    valor,
-    data: new Date().toLocaleString('pt-BR')
-  });
-
-  alert('Entrada lançada no Caixa (valor com lucro).');
-}
-
-function calcularLucroOrcamento(orc) {
-  const entrada = calcularTotalOrcamento(orc); // com lucro
-  const saida = calcularTotalPecasSemLucro(orc); // custo real
-  return entrada - saida;
-}
-
-function atualizarOrcamento(orcAtualizado) {
-  const lista = JSON.parse(localStorage.getItem('orcamentos') || '[]');
-  const nova = lista.map(o => o.id === orcAtualizado.id ? orcAtualizado : o);
-  localStorage.setItem('orcamentos', JSON.stringify(nova));
+function atualizarOrcamento(orcAtualizado){
+  const lista = JSON.parse(localStorage.getItem('orcamentos')||'[]');
+  localStorage.setItem(
+    'orcamentos',
+    JSON.stringify(lista.map(o=>o.id===orcAtualizado.id?orcAtualizado:o))
+  );
 }
 
 // ================== INIT ==================
