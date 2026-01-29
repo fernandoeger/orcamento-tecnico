@@ -109,6 +109,9 @@ function salvarOrcamento(){
     data: new Date().toLocaleString('pt-BR'),
     cliente: cliente.value.trim(),
     aparelho: descricaoAparelho.value.trim(),
+    status: 'aberto',        // aberto | pago
+    saidaLancada: false,    // controle de saída
+    entradaLancada: false   // controle de entrada
     maoObraIncluida: incluirMaoObra.checked,
     valorMaoObra: Number(valorMaoObra.value||0),
     servicos: [...document.querySelectorAll('#servicosContainer .servico-item')].map(div=>{
