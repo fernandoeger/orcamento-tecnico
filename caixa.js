@@ -1,25 +1,14 @@
-// ================== FIRESTORE ==================
-import {
-  collection,
-  addDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  deleteDoc,
-  doc
-} from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
-
 // ================== LOCAL STORAGE ==================
-function getLocal() {
+function getCaixa() {
   return JSON.parse(localStorage.getItem('livroCaixa') || '[]');
 }
 
-function setLocal(lista) {
+function setCaixa(lista) {
   localStorage.setItem('livroCaixa', JSON.stringify(lista));
 }
 
 // ================== SALVAR MOVIMENTO ==================
-async function salvarMovimento() {
+function salvarMovimento() {
   const tipo = document.getElementById('tipo').value;
   const descricao = document.getElementById('descricao').value.trim();
   const valor = Number(document.getElementById('valor').value);
@@ -30,33 +19,18 @@ async function salvarMovimento() {
   }
 
   const movimento = {
-    id: Date.now().toString(), // ID local
-    tipo,                      // entrada | saida
+    id: Date.now().toString(),
+    tipo, // entrada | saida
     descricao,
     valor,
-    data: new Date().toLocaleString('pt-BR'),
-    criadoEm: Date.now()
+    data: new Date().toLocaleString('pt-BR')
   };
 
-  // 1️⃣ salva LOCAL primeiro (offline seguro)
-  const local = getLocal();
-  local.unshift(movimento);
-  setLocal(local);
-  renderTudo(local);
+  const caixa = getCaixa();
+  caixa.unshift(movimento);
+  setCaixa(caixa);
 
-  // 2️⃣ tenta salvar ONLINE
-  try {
-    const ref = await addDoc(collection(window.db, 'livroCaixa'), movimento);
-    movimento.firestoreId = ref.id;
-
-    // atualiza local com firestoreId
-    const atualizado = getLocal().map(i =>
-      i.id === movimento.id ? movimento : i
-    );
-    setLocal(atualizado);
-  } catch (e) {
-    console.warn('Offline — salvo apenas localmente');
-  }
+  renderTudo(caixa);
 
   document.getElementById('descricao').value = '';
   document.getElementById('valor').value = '';
@@ -128,22 +102,12 @@ function renderLista(lista) {
     btnExcluir.style.padding = '4px 8px';
     btnExcluir.style.cursor = 'pointer';
 
-    btnExcluir.onclick = async () => {
+    btnExcluir.onclick = () => {
       if (!confirm('Deseja excluir este movimento?')) return;
 
-      // remove local
-      let caixa = getLocal().filter(i => i.id !== item.id);
-      setLocal(caixa);
-      renderTudo(caixa);
-
-      // remove do Firestore (se existir)
-      if (item.firestoreId) {
-        try {
-          await deleteDoc(doc(window.db, 'livroCaixa', item.firestoreId));
-        } catch (e) {
-          console.warn('Erro ao excluir do Firestore');
-        }
-      }
+      const atualizado = getCaixa().filter(i => i.id !== item.id);
+      setCaixa(atualizado);
+      renderTudo(atualizado);
     };
 
     ladoDireito.appendChild(valor);
@@ -155,40 +119,8 @@ function renderLista(lista) {
   });
 }
 
-// ================== SINCRONIZAÇÃO ==================
-function iniciarSync() {
-  // 1️⃣ mostra o que já existe local
-  const local = getLocal();
-  renderTudo(local);
-
-  // 2️⃣ escuta Firestore
-  const q = query(
-    collection(window.db, 'livroCaixa'),
-    orderBy('criadoEm', 'desc')
-  );
-
-  onSnapshot(q, snapshot => {
-    const online = [];
-
-    snapshot.forEach(docSnap => {
-      online.push({
-        firestoreId: docSnap.id,
-        ...docSnap.data()
-      });
-    });
-
-    // junta sem duplicar
-    const combinado = [...online];
-    local.forEach(l => {
-      if (!online.some(o => o.id === l.id)) {
-        combinado.push(l);
-      }
-    });
-
-    combinado.sort((a, b) => b.criadoEm - a.criadoEm);
-    setLocal(combinado);
-    renderTudo(combinado);
-  });
-}
-
-document.addEventListener('DOMContentLoaded', iniciarSync);
+// ================== INIT ==================
+document.addEventListener('DOMContentLoaded', () => {
+  const caixa = getCaixa();
+  renderTudo(caixa);
+});
