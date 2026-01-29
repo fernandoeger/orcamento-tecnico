@@ -1,8 +1,8 @@
-// Preços sugeridos para serviços
+// ================== CONFIG ==================
 const PRECOS_SUGERIDOS = {
   "Limpeza interna e troca de pasta térmica": 100,
   "Formatação": 60,
-  "formatação + Backup": 100,
+  "Formatação + Backup": 100,
   "Reballing": 250,
   "Atualização de BIOS": 80,
   "Diagnóstico": 30,
@@ -10,341 +10,211 @@ const PRECOS_SUGERIDOS = {
   "Instalação de drivers": 50
 };
 
+// ================== UTIL ==================
 function formatBR(value){
-  const numericValue = parseFloat(value) || 0;
-  return numericValue.toLocaleString('pt-BR', {
+  return (Number(value) || 0).toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
 }
 
-function sumValues(selector){
-  const nodes = document.querySelectorAll(selector);
-  return Array.from(nodes)
-    .map(i => parseFloat(i.value || 0))
-    .reduce((a, b) => a + b, 0);
-}
-
+// ================== SERVIÇOS ==================
 function renderizarServicos() {
   const container = document.getElementById('servicosContainer');
   container.innerHTML = '';
 
-  for (const [servico, preco] of Object.entries(PRECOS_SUGERIDOS)) {
+  Object.entries(PRECOS_SUGERIDOS).forEach(([nome, preco]) => {
     const div = document.createElement('div');
     div.className = 'servico-item';
     div.innerHTML = `
-      <input type="checkbox" data-item="${servico}">
-      <label>${servico}</label>
-      <input type="number" class="valor servico" data-item="${servico}" value="${preco}" disabled>
+      <input type="checkbox" data-item="${nome}">
+      <label>${nome}</label>
+      <input type="number" class="valor servico" data-item="${nome}" value="${preco}" disabled>
     `;
     container.appendChild(div);
-  }
+  });
 
-  document.querySelectorAll('#servicosContainer input[type="checkbox"]').forEach(cb => {
-    cb.addEventListener('change', function () {
-      const input = this.parentElement.querySelector('input[type="number"]');
-      input.disabled = !this.checked;
-      if (!this.checked) input.value = 0;
+  container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const input = cb.parentElement.querySelector('input[type="number"]');
+      input.disabled = !cb.checked;
+      if (!cb.checked) input.value = 0;
       recalcular();
     });
   });
 
-  document.querySelectorAll('#servicosContainer input[type="number"]').forEach(input => {
+  container.querySelectorAll('input[type="number"]').forEach(input => {
     input.addEventListener('input', recalcular);
   });
 }
 
+// ================== ITENS ==================
 function getItensCobrados(){
   const itens = [];
 
   if (document.getElementById('incluirMaoObra').checked) {
-    const valor = parseFloat(document.getElementById('valorMaoObra').value || 0);
-    if (valor > 0) itens.push({ nome: 'Mão de Obra', valor });
+    const v = Number(document.getElementById('valorMaoObra').value || 0);
+    if (v > 0) itens.push({ nome: 'Mão de Obra', valor: v });
   }
 
   document.querySelectorAll('#servicosContainer .servico-item').forEach(div => {
     const cb = div.querySelector('input[type="checkbox"]');
     const input = div.querySelector('input[type="number"]');
-    if (cb.checked) {
-      const valor = parseFloat(input.value || 0);
-      if (valor > 0) itens.push({ nome: input.dataset.item, valor });
+    if (cb.checked && input.value > 0) {
+      itens.push({ nome: input.dataset.item, valor: Number(input.value) });
     }
   });
 
   document.querySelectorAll('input.peca').forEach(input => {
-    const valor = parseFloat(input.value || 0);
-    if (valor > 0) {
+    const v = Number(input.value || 0);
+    if (v > 0) {
       let nome = input.dataset.item;
       if (nome === 'Outros' && document.getElementById('outrosDesc').value.trim()) {
         nome = `Outros (${document.getElementById('outrosDesc').value.trim()})`;
       }
-      itens.push({ nome, valor: valor * 1.25 });
+      itens.push({ nome, valor: v * 1.25 });
     }
   });
 
   return itens;
 }
 
+// ================== CALCULAR ==================
 function recalcular(){
   const itens = getItensCobrados();
-  const total = itens.reduce((s, i) => s + i.valor, 0);
+  const total = itens.reduce((s,i)=>s+i.valor,0);
   document.getElementById('custo').innerText = 'R$ ' + formatBR(total);
 
   const tbody = document.querySelector('#cobrancaTable tbody');
   tbody.innerHTML = '';
 
   if (!itens.length) {
-    const row = tbody.insertRow();
-    row.insertCell().innerText = 'Nenhum item/serviço cobrado.';
-    row.insertCell().innerText = '';
+    const r = tbody.insertRow();
+    r.insertCell().innerText = 'Nenhum item/serviço cobrado.';
+    r.insertCell().innerText = '';
     return;
   }
 
-  itens.forEach(item => {
-    const row = tbody.insertRow();
-    row.insertCell().innerText = item.nome;
-    row.insertCell().innerText = 'R$ ' + formatBR(item.valor);
+  itens.forEach(i=>{
+    const r = tbody.insertRow();
+    r.insertCell().innerText = i.nome;
+    r.insertCell().innerText = 'R$ ' + formatBR(i.valor);
   });
 }
 
-function salvarOrcamento() {
+// ================== SALVAR ==================
+function salvarOrcamento(){
   const orcamento = {
     id: Date.now(),
     data: new Date().toLocaleString('pt-BR'),
-    cliente: document.getElementById('cliente').value.trim(),
-    aparelho: document.getElementById('descricaoAparelho').value.trim(),
-    maoObraIncluida: document.getElementById('incluirMaoObra').checked,
-    valorMaoObra: parseFloat(document.getElementById('valorMaoObra').value) || 0,
-    servicos: Array.from(document.querySelectorAll('#servicosContainer .servico-item')).map(div => {
-      const checkbox = div.querySelector('input[type="checkbox"]');
+    cliente: cliente.value.trim(),
+    aparelho: descricaoAparelho.value.trim(),
+    maoObraIncluida: incluirMaoObra.checked,
+    valorMaoObra: Number(valorMaoObra.value||0),
+    servicos: [...document.querySelectorAll('#servicosContainer .servico-item')].map(div=>{
+      const cb = div.querySelector('input[type="checkbox"]');
       const input = div.querySelector('input[type="number"]');
-      return {
-        nome: input.getAttribute('data-item'),
-        selecionado: checkbox.checked,
-        valor: parseFloat(input.value) || 0
-      };
+      return { nome: input.dataset.item, selecionado: cb.checked, valor: Number(input.value||0) };
     }),
-    pecas: Array.from(document.querySelectorAll('input.peca')).map(input => ({
-      nome: input.getAttribute('data-item'),
-      valor: parseFloat(input.value) || 0
+    pecas: [...document.querySelectorAll('input.peca')].map(i=>({
+      nome:i.dataset.item, valor:Number(i.value||0)
     })),
-    outrosDesc: document.getElementById('outrosDesc').value.trim(),
-    observacoes: document.getElementById('observacoes').value.trim()
+    outrosDesc: outrosDesc.value,
+    observacoes: observacoes.value
   };
 
-  let historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
-  historico.unshift(orcamento);
-  localStorage.setItem('orcamentos', JSON.stringify(historico));
-
-  alert('Orçamento salvo com sucesso!');
-  recalcular();
+  const h = JSON.parse(localStorage.getItem('orcamentos')||'[]');
+  h.unshift(orcamento);
+  localStorage.setItem('orcamentos', JSON.stringify(h));
+  alert('Orçamento salvo!');
 }
 
-function fecharHistorico() {
-  document.getElementById('modalHistorico').style.display = 'none';
-}
-
-function mostrarHistorico() {
-  const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
-  const lista = document.getElementById('listaHistorico');
+// ================== HISTÓRICO ==================
+function mostrarHistorico(){
+  const h = JSON.parse(localStorage.getItem('orcamentos')||'[]');
+  const lista = listaHistorico;
   lista.innerHTML = '';
 
-  if (!historico.length) {
-    lista.innerHTML = '<li>Nenhum orçamento salvo ainda.</li>';
-    document.getElementById('modalHistorico').style.display = 'block';
+  if (!h.length){
+    lista.innerHTML = '<li>Nenhum orçamento salvo.</li>';
+    modalHistorico.style.display='block';
     return;
   }
 
-  historico.forEach((orc, index) => {
+  h.forEach((orc,i)=>{
     const li = document.createElement('li');
-    li.style.borderBottom = '1px solid #eee';
-    li.style.padding = '10px 0';
+    li.innerHTML = `<strong>${orc.cliente||'Cliente'}</strong> - ${orc.aparelho||''}<br><small>${orc.data}</small>`;
+    li.style.cursor='pointer';
+    li.onclick=()=>carregarOrcamento(orc);
 
-    const info = document.createElement('div');
-    info.style.cursor = 'pointer';
-    info.innerHTML = `
-      <strong>${orc.cliente || 'Cliente não informado'}</strong>
-      - ${orc.aparelho || 'Sem descrição'}<br>
-      <small>${orc.data || ''}</small>
-    `;
-    info.onclick = () => carregarOrcamento(orc);
+    const acoes=document.createElement('div');
 
-    const acoes = document.createElement('div');
-    acoes.style.marginTop = '6px';
-    acoes.style.display = 'flex';
-    acoes.style.gap = '6px';
-    acoes.style.flexWrap = 'wrap';
+    const b1=document.createElement('button');
+    b1.textContent='➖ Saída';
+    b1.onclick=e=>{e.stopPropagation();lancarSaidaNoCaixa(orc);};
 
-    const btnSaida = document.createElement('button');
-    btnSaida.className = 'btn danger';
-    btnSaida.textContent = '➖ Saída';
-    btnSaida.onclick = (e) => {
+    const b2=document.createElement('button');
+    b2.textContent='➕ Entrada';
+    b2.onclick=e=>{e.stopPropagation();lancarEntradaNoCaixa(orc);};
+
+    const bx=document.createElement('button');
+    bx.textContent='🗑️';
+    bx.onclick=e=>{
       e.stopPropagation();
-      lancarSaidaNoCaixa(orc);
+      h.splice(i,1);
+      localStorage.setItem('orcamentos',JSON.stringify(h));
+      mostrarHistorico();
     };
 
-    const btnEntrada = document.createElement('button');
-    btnEntrada.className = 'btn';
-    btnEntrada.textContent = '➕ Entrada';
-    btnEntrada.onclick = (e) => {
-      e.stopPropagation();
-      lancarEntradaNoCaixa(orc);
-    };
-
-    const btnExcluir = document.createElement('button');
-    btnExcluir.className = 'btn secondary';
-    btnExcluir.textContent = '🗑️';
-    btnExcluir.onclick = (e) => {
-      e.stopPropagation();
-      if (confirm('Excluir este orçamento?')) {
-        historico.splice(index, 1);
-        localStorage.setItem('orcamentos', JSON.stringify(historico));
-        mostrarHistorico();
-      }
-    };
-
-    acoes.appendChild(btnSaida);
-    acoes.appendChild(btnEntrada);
-    acoes.appendChild(btnExcluir);
-
-    li.appendChild(info);
+    acoes.append(b1,b2,bx);
     li.appendChild(acoes);
     lista.appendChild(li);
   });
 
-  document.getElementById('modalHistorico').style.display = 'block';
+  modalHistorico.style.display='block';
 }
 
-      li.appendChild(info);
-      li.appendChild(btnExcluir);
-      lista.appendChild(li);
-    });
-  }
-function carregarOrcamento(orc) {
-  document.getElementById('cliente').value = orc.cliente || '';
-  document.getElementById('descricaoAparelho').value = orc.aparelho || '';
-
-  const maoObraCheck = document.getElementById('incluirMaoObra');
-  maoObraCheck.checked = orc.maoObraIncluida || false;
-
-  const valorMaoObraInput = document.getElementById('valorMaoObra');
-  valorMaoObraInput.value = orc.valorMaoObra || 120;
-  valorMaoObraInput.disabled = !maoObraCheck.checked;
-
-  // 🔒 SERVIÇOS (com proteção)
-  if (Array.isArray(orc.servicos)) {
-    orc.servicos.forEach(serv => {
-      const checkbox = document.querySelector(
-        `#servicosContainer input[type="checkbox"][data-item="${serv.nome}"]`
-      );
-      const input = document.querySelector(
-        `#servicosContainer input[type="number"][data-item="${serv.nome}"]`
-      );
-
-      if (checkbox && input) {
-        checkbox.checked = serv.selecionado;
-        input.disabled = !serv.selecionado;
-        input.value = serv.valor;
-      }
-    });
-  }
-
-  // 🔒 PEÇAS (com proteção)
-  if (Array.isArray(orc.pecas)) {
-    orc.pecas.forEach(peca => {
-      const input = document.querySelector(
-        `input.peca[data-item="${peca.nome}"]`
-      );
-      if (input) input.value = peca.valor;
-    });
-  }
-
-  // salva pendente
-  localStorage.setItem('caixa_pendente', JSON.stringify(movimento));
-
-  alert('Orçamento enviado para o Caixa. Abra o Livro Caixa para confirmar.');
+function fecharHistorico(){
+  modalHistorico.style.display='none';
 }
 
-  document.getElementById('modalHistorico').style.display = 'block';
+// ================== CAIXA ==================
+function calcularTotalOrcamento(orc){
+  let t=0;
+  if(orc.maoObraIncluida) t+=orc.valorMaoObra;
+  orc.servicos.forEach(s=>{ if(s.selecionado) t+=s.valor; });
+  orc.pecas.forEach(p=>{ t+=p.valor*1.25; });
+  return t;
 }
 
-function calcularTotalOrcamento(orc) {
-  let total = 0;
-
-  if (orc.maoObraIncluida) {
-    total += Number(orc.valorMaoObra || 0);
-  }
-
-  if (Array.isArray(orc.servicos)) {
-    orc.servicos.forEach(s => {
-      if (s.selecionado) total += Number(s.valor || 0);
-    });
-  }
-
-  if (Array.isArray(orc.pecas)) {
-    orc.pecas.forEach(p => {
-      total += Number(p.valor || 0) * 1.25;
-    });
-  }
-
-  return total;
+function salvarNoCaixa(m){
+  const c = JSON.parse(localStorage.getItem('livroCaixa')||'[]');
+  c.unshift({id:Date.now(),...m});
+  localStorage.setItem('livroCaixa',JSON.stringify(c));
 }
 
-function lancarSaidaNoCaixa(orc) {
-  const valor = calcularTotalOrcamento(orc);
-
-  if (!valor || valor <= 0) {
-    alert('Orçamento sem valor.');
-    return;
-  }
-
-  const movimento = {
-    tipo: 'saida',
-    descricao: `Peças – ${orc.cliente || 'Cliente'} (${orc.aparelho || 'Aparelho'})`,
-    valor,
-    data: new Date().toLocaleString('pt-BR')
-  };
-
-  salvarNoCaixa(movimento);
-  alert('Saída lançada no Caixa.');
-}
-
-function lancarEntradaNoCaixa(orc) {
-  const valor = calcularTotalOrcamento(orc);
-
-  if (!valor || valor <= 0) {
-    alert('Orçamento sem valor.');
-    return;
-  }
-
-  const movimento = {
-    tipo: 'entrada',
-    descricao: `Pagamento – ${orc.cliente || 'Cliente'} (${orc.aparelho || 'Aparelho'})`,
-    valor,
-    data: new Date().toLocaleString('pt-BR')
-  };
-
-  salvarNoCaixa(movimento);
-  alert('Entrada lançada no Caixa.');
-}
-
-function salvarNoCaixa(movimento) {
-  const caixa = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
-  caixa.unshift({
-    id: Date.now().toString(),
-    ...movimento
+function lancarSaidaNoCaixa(orc){
+  salvarNoCaixa({
+    tipo:'saida',
+    descricao:`Peças – ${orc.cliente}`,
+    valor:calcularTotalOrcamento(orc),
+    data:new Date().toLocaleString('pt-BR')
   });
-  localStorage.setItem('livroCaixa', JSON.stringify(caixa));
+  alert('Saída lançada.');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function lancarEntradaNoCaixa(orc){
+  salvarNoCaixa({
+    tipo:'entrada',
+    descricao:`Pagamento – ${orc.cliente}`,
+    valor:calcularTotalOrcamento(orc),
+    data:new Date().toLocaleString('pt-BR')
+  });
+  alert('Entrada lançada.');
+}
+
+// ================== INIT ==================
+document.addEventListener('DOMContentLoaded',()=>{
   renderizarServicos();
   recalcular();
-});
-
-window.addEventListener('keydown', function(e){
-  if((e.ctrlKey || e.metaKey) && e.key === 's'){
-    e.preventDefault();
-    salvarOrcamento();
-  }
 });
