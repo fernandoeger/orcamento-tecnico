@@ -247,3 +247,12 @@ document.addEventListener('DOMContentLoaded',()=>{
   renderizarServicos();
   recalcular();
 });
+
+// ================== FUNÇÕES GLOBAIS (necessário para botões inline) ==================
+window.fecharHistorico = function () {
+  modalHistorico.style.display = 'none';
+};
+
+window.mostrarHistorico = mostrarHistorico;
+window.salvarOrcamento = salvarOrcamento;
+window.recalcular = recalcular;
