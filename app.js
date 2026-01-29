@@ -243,6 +243,12 @@ function lancarEntradaNoCaixa(orc) {
   alert('Entrada lançada no Caixa (valor com lucro).');
 }
 
+function calcularLucroOrcamento(orc) {
+  const entrada = calcularTotalOrcamento(orc); // com lucro
+  const saida = calcularTotalPecasSemLucro(orc); // custo real
+  return entrada - saida;
+}
+
 // ================== INIT ==================
 document.addEventListener('DOMContentLoaded',()=>{
   renderizarServicos();
