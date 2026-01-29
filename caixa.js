@@ -118,6 +118,29 @@ function renderLista(lista) {
     ul.appendChild(li);
   });
 }
+function verificarEntradaPendente() {
+  const pendente = localStorage.getItem('caixa_pendente');
+  if (!pendente) return;
+
+  const movimento = JSON.parse(pendente);
+
+  const confirmar = confirm(
+    `Lançar no caixa?\n\n${movimento.descricao}\nValor: R$ ${movimento.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+  );
+
+  if (confirmar) {
+    const caixa = getCaixa();
+    caixa.unshift({
+      id: Date.now().toString(),
+      ...movimento
+    });
+    setCaixa(caixa);
+    renderTudo(caixa);
+    alert('Entrada lançada no caixa.');
+  }
+
+  localStorage.removeItem('caixa_pendente');
+}
 
 // ================== INIT ==================
 document.addEventListener('DOMContentLoaded', () => {
