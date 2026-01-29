@@ -186,21 +186,40 @@ function calcularTotalOrcamento(orc){
   orc.pecas.forEach(p=>{ t+=p.valor*1.25; });
   return t;
 }
+// 🔹 Total REAL das peças (sem lucro)
+function calcularTotalPecasSemLucro(orc) {
+  let total = 0;
 
+  if (Array.isArray(orc.pecas)) {
+    orc.pecas.forEach(p => {
+      total += Number(p.valor || 0); // SEM * 1.25
+    });
+  }
+
+  return total;
+}
 function salvarNoCaixa(m){
   const c = JSON.parse(localStorage.getItem('livroCaixa')||'[]');
   c.unshift({id:Date.now(),...m});
   localStorage.setItem('livroCaixa',JSON.stringify(c));
 }
 
-function lancarSaidaNoCaixa(orc){
+function lancarSaidaNoCaixa(orc) {
+  const valor = calcularTotalPecasSemLucro(orc);
+
+  if (!valor || valor <= 0) {
+    alert('Orçamento não possui peças para lançar como saída.');
+    return;
+  }
+
   salvarNoCaixa({
-    tipo:'saida',
-    descricao:`Peças – ${orc.cliente}`,
-    valor:calcularTotalOrcamento(orc),
-    data:new Date().toLocaleString('pt-BR')
+    tipo: 'saida',
+    descricao: `Compra de peças – ${orc.cliente || 'Cliente'} (${orc.aparelho || ''})`,
+    valor,
+    data: new Date().toLocaleString('pt-BR')
   });
-  alert('Saída lançada.');
+
+  alert('Saída lançada no Caixa (valor real das peças).');
 }
 
 function lancarEntradaNoCaixa(orc){
