@@ -149,41 +149,71 @@ function mostrarHistorico() {
   const lista = document.getElementById('listaHistorico');
   lista.innerHTML = '';
 
-  if (historico.length === 0) {
+  if (!historico.length) {
     lista.innerHTML = '<li>Nenhum orçamento salvo ainda.</li>';
-  } else {
-    historico.forEach((orc, index) => {
-      const li = document.createElement('li');
-      li.style.display = 'flex';
-      li.style.justifyContent = 'space-between';
-      li.style.alignItems = 'flex-start';
+    document.getElementById('modalHistorico').style.display = 'block';
+    return;
+  }
 
-      const info = document.createElement('div');
-      info.style.flex = '1';
-      info.innerHTML = `
-        <strong>${orc.cliente || 'Cliente não informado'}</strong> - ${orc.aparelho || 'Sem descrição'}<br>
-        <small>${orc.data}</small>
-      `;
-      info.style.cursor = 'pointer';
-      info.onclick = () => carregarOrcamento(orc);
+  historico.forEach((orc, index) => {
+    const li = document.createElement('li');
+    li.style.borderBottom = '1px solid #eee';
+    li.style.padding = '10px 0';
 
-      const btnExcluir = document.createElement('button');
-      btnExcluir.className = 'btn danger';
-      btnExcluir.style.padding = '4px 8px';
-      btnExcluir.style.fontSize = '0.8rem';
-      btnExcluir.style.marginLeft = '10px';
-      btnExcluir.textContent = '🗑️';
-      btnExcluir.title = 'Excluir este orçamento';
-      btnExcluir.onclick = (e) => {
-        e.stopPropagation();
-        if (confirm(`Excluir orçamento de "${orc.cliente || 'Cliente não informado'}" (${orc.data})?`)) {
-          let historicoAtual = JSON.parse(localStorage.getItem('orcamentos') || '[]');
-          historicoAtual.splice(index, 1);
-          localStorage.setItem('orcamentos', JSON.stringify(historicoAtual));
-          mostrarHistorico();
-          alert('Orçamento excluído com sucesso!');
-        }
-      };
+    const info = document.createElement('div');
+    info.style.cursor = 'pointer';
+    info.innerHTML = `
+      <strong>${orc.cliente || 'Cliente não informado'}</strong>
+      - ${orc.aparelho || 'Sem descrição'}<br>
+      <small>${orc.data || ''}</small>
+    `;
+    info.onclick = () => carregarOrcamento(orc);
+
+    const acoes = document.createElement('div');
+    acoes.style.marginTop = '6px';
+    acoes.style.display = 'flex';
+    acoes.style.gap = '6px';
+    acoes.style.flexWrap = 'wrap';
+
+    const btnSaida = document.createElement('button');
+    btnSaida.className = 'btn danger';
+    btnSaida.textContent = '➖ Saída';
+    btnSaida.onclick = (e) => {
+      e.stopPropagation();
+      lancarSaidaNoCaixa(orc);
+    };
+
+    const btnEntrada = document.createElement('button');
+    btnEntrada.className = 'btn';
+    btnEntrada.textContent = '➕ Entrada';
+    btnEntrada.onclick = (e) => {
+      e.stopPropagation();
+      lancarEntradaNoCaixa(orc);
+    };
+
+    const btnExcluir = document.createElement('button');
+    btnExcluir.className = 'btn secondary';
+    btnExcluir.textContent = '🗑️';
+    btnExcluir.onclick = (e) => {
+      e.stopPropagation();
+      if (confirm('Excluir este orçamento?')) {
+        historico.splice(index, 1);
+        localStorage.setItem('orcamentos', JSON.stringify(historico));
+        mostrarHistorico();
+      }
+    };
+
+    acoes.appendChild(btnSaida);
+    acoes.appendChild(btnEntrada);
+    acoes.appendChild(btnExcluir);
+
+    li.appendChild(info);
+    li.appendChild(acoes);
+    lista.appendChild(li);
+  });
+
+  document.getElementById('modalHistorico').style.display = 'block';
+}
 
       li.appendChild(info);
       li.appendChild(btnExcluir);
