@@ -3,6 +3,7 @@ const PRECOS_SUGERIDOS = {
   "Limpeza interna e troca de pasta térmica": 100,
   "Formatação": 60,
   "Formatação + Backup": 100,
+  "Instalação de programas": 80,
   "Reballing": 250,
   "Atualização de BIOS": 80,
   "Diagnóstico": 30,
