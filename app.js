@@ -102,4 +102,37 @@ function recalcular(){
 
   itens.forEach(item => {
     const row = tbody.insertRow();
-    row.ins
+    row.insertCell().innerText = item.nome;
+    row.insertCell().innerText = 'R$ ' + formatBR(item.valor);
+  });
+}
+
+function salvarOrcamento(){
+  const historico = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+
+  historico.unshift({
+    data: new Date().toLocaleString('pt-BR'),
+    cliente: document.getElementById('cliente').value,
+    aparelho: document.getElementById('descricaoAparelho').value,
+    total: document.getElementById('custo').innerText
+  });
+
+  localStorage.setItem('orcamentos', JSON.stringify(historico));
+  alert('Orçamento salvo com sucesso!');
+}
+
+function mostrarHistorico(){
+  alert('Histórico salvo no navegador (modo original)');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderizarServicos();
+  recalcular();
+});
+
+window.addEventListener('keydown', function(e){
+  if((e.ctrlKey || e.metaKey) && e.key === 's'){
+    e.preventDefault();
+    salvarOrcamento();
+  }
+});
