@@ -222,14 +222,22 @@ function lancarSaidaNoCaixa(orc) {
   alert('Saída lançada no Caixa (valor real das peças).');
 }
 
-function lancarEntradaNoCaixa(orc){
+function lancarEntradaNoCaixa(orc) {
+  const valor = calcularTotalOrcamento(orc); // COM lucro
+
+  if (!valor || valor <= 0) {
+    alert('Orçamento sem valor.');
+    return;
+  }
+
   salvarNoCaixa({
-    tipo:'entrada',
-    descricao:`Pagamento – ${orc.cliente}`,
-    valor:calcularTotalOrcamento(orc),
-    data:new Date().toLocaleString('pt-BR')
+    tipo: 'entrada',
+    descricao: `Pagamento – ${orc.cliente || 'Cliente'} (${orc.aparelho || ''})`,
+    valor,
+    data: new Date().toLocaleString('pt-BR')
   });
-  alert('Entrada lançada.');
+
+  alert('Entrada lançada no Caixa (valor com lucro).');
 }
 
 // ================== INIT ==================
