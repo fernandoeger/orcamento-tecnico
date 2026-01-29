@@ -1,22 +1,31 @@
-// ================= DADOS FIXOS =================
+// =======================
+// DADOS FIXOS
+// =======================
 const SERVICOS = {
-  "Limpeza + pasta térmica": 100,
+  "Limpeza interna e troca de pasta térmica": 100,
   "Formatação": 60,
-  "Backup + Formatação": 100,
+  "Formatação + Backup": 100,
+  "Reballing": 250,
+  "Atualização de BIOS": 80,
   "Diagnóstico": 30,
-  "Drivers": 50
+  "Troca de teclado (mão de obra)": 90,
+  "Instalação de drivers": 50
 };
 
 const PECAS = [
-  "SSD","HD","Memória RAM","Bateria","Teclado","Tela",
-  "Cooler","DC Jack","Placa-mãe","Fonte","Placa de vídeo"
+  "SSD","HD","Memória RAM","Bateria","Teclado","Tela / Display",
+  "Flat da tela","Alto-falante","Webcam","Cooler","DC Jack",
+  "Carcaça","Touchpad","Placa Wi-Fi","Placa Bluetooth",
+  "Microfone","Dobradiças","BIOS","Placa-mãe",
+  "Fonte","Placa de vídeo","Processador","Cooler CPU",
+  "Gabinete","Ventoinhas","Cabo SATA"
 ];
 
-// ================= VARIÁVEIS =================
-let cliente, aparelho, chkMaoObra, valorMaoObra, totalEl;
-let modalHistorico, listaHistorico;
+// =======================
+// DOM
+// =======================
+let cliente, aparelho, chkMaoObra, valorMaoObra, totalEl, modalHistorico, listaHistorico;
 
-// ================= INIT =================
 document.addEventListener('DOMContentLoaded', () => {
   cliente = document.getElementById('cliente');
   aparelho = document.getElementById('aparelho');
@@ -29,19 +38,22 @@ document.addEventListener('DOMContentLoaded', () => {
   renderServicos();
   renderPecas();
 
-  chkMaoObra.addEventListener('change', () => {
+  chkMaoObra.onchange = () => {
     valorMaoObra.disabled = !chkMaoObra.checked;
     recalcular();
-  });
+  };
 
   document.body.addEventListener('input', recalcular);
 });
 
-// ================= RENDER =================
+// =======================
+// RENDER
+// =======================
 function renderServicos(){
-  servicos.innerHTML = '';
-  Object.entries(SERVICOS).forEach(([nome,valor])=>{
-    servicos.innerHTML += `
+  const div = document.getElementById('servicos');
+  div.innerHTML = '';
+  Object.entries(SERVICOS).forEach(([nome, valor]) => {
+    div.innerHTML += `
       <label>
         <input type="checkbox" data-valor="${valor}">
         ${nome} (R$ ${valor})
@@ -51,36 +63,42 @@ function renderServicos(){
 }
 
 function renderPecas(){
-  pecas.innerHTML = '';
-  PECAS.forEach(p=>{
-    pecas.innerHTML += `
+  const div = document.getElementById('pecas');
+  div.innerHTML = '';
+  PECAS.forEach(p => {
+    div.innerHTML += `
       <label>${p}</label>
-      <input type="number" class="peca" data-nome="${p}">
+      <input type="number" class="peca" data-nome="${p}" placeholder="Custo da peça">
     `;
   });
 }
 
-// ================= CALCULAR =================
+// =======================
+// CÁLCULO
+// =======================
 function recalcular(){
   let total = 0;
 
-  document.querySelectorAll('#servicos input:checked').forEach(c=>{
+  document.querySelectorAll('#servicos input:checked').forEach(c => {
     total += Number(c.dataset.valor);
   });
 
-  if(chkMaoObra.checked){
+  if (chkMaoObra.checked) {
     total += Number(valorMaoObra.value || 0);
   }
 
-  document.querySelectorAll('.peca').forEach(p=>{
-    if(p.value > 0) total += p.value * 1.3;
+  document.querySelectorAll('.peca').forEach(p => {
+    const custo = Number(p.value || 0);
+    if (custo > 0) total += custo * 1.3;
   });
 
   totalEl.innerText =
-    'R$ ' + total.toLocaleString('pt-BR',{minimumFractionDigits:2});
+    'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 }
 
-// ================= STORAGE =================
+// =======================
+// HISTÓRICO
+// =======================
 function getHistorico(){
   return JSON.parse(localStorage.getItem('orcamentos') || '[]');
 }
@@ -89,28 +107,32 @@ function setHistorico(h){
   localStorage.setItem('orcamentos', JSON.stringify(h));
 }
 
-// ================= SALVAR =================
 function salvarOrcamento(){
   const itens = [];
 
-  document.querySelectorAll('#servicos input:checked').forEach(c=>{
+  document.querySelectorAll('#servicos input:checked').forEach(c => {
     itens.push({
+      tipo: 'servico',
       nome: c.parentElement.textContent.trim(),
       valor: Number(c.dataset.valor)
     });
   });
 
-  document.querySelectorAll('.peca').forEach(p=>{
-    if(p.value > 0){
+  document.querySelectorAll('.peca').forEach(p => {
+    const custo = Number(p.value || 0);
+    if (custo > 0) {
       itens.push({
+        tipo: 'peca',
         nome: p.dataset.nome,
-        valor: p.value * 1.3
+        custo: custo,
+        valor: custo * 1.3
       });
     }
   });
 
-  if(chkMaoObra.checked){
+  if (chkMaoObra.checked) {
     itens.push({
+      tipo: 'maoobra',
       nome: 'Mão de obra',
       valor: Number(valorMaoObra.value)
     });
@@ -121,77 +143,65 @@ function salvarOrcamento(){
     id: Date.now(),
     cliente: cliente.value,
     aparelho: aparelho.value,
+    data: new Date().toLocaleString('pt-BR'),
     itens,
-    pago: false,
-    data: new Date().toLocaleString('pt-BR')
+    pecasCompradas: false,
+    pago: false
   });
 
   setHistorico(h);
-  alert('Orçamento salvo');
+  alert('Orçamento salvo com sucesso');
 }
 
-// ================= HISTÓRICO =================
+// =======================
+// MODAL HISTÓRICO
+// =======================
 function mostrarHistorico(){
   listaHistorico.innerHTML = '';
   const h = getHistorico();
 
-  if(h.length === 0){
+  if (h.length === 0) {
     listaHistorico.innerHTML = '<li>Nenhum orçamento salvo.</li>';
-    modalHistorico.style.display = 'block';
-    return;
   }
 
-  h.forEach((o,index)=>{
-    const total = o.itens.reduce((s,x)=>s+x.valor,0);
+  h.forEach((o, index) => {
+    const total = o.itens.reduce((s, i) => s + i.valor, 0);
+
     const li = document.createElement('li');
-    li.style.marginBottom = '12px';
+    li.style.marginBottom = '14px';
 
     li.innerHTML = `
-      <strong>${o.cliente || 'Cliente'}</strong><br>
+      <strong>${o.cliente || 'Cliente não informado'}</strong><br>
       ${o.aparelho || ''}<br>
       <small>${o.data}</small><br>
       <strong>Total:</strong> R$ ${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}
     `;
 
-    // 💰 BOTÃO CAIXA
-    const btnCaixa = document.createElement('button');
-    btnCaixa.textContent = o.pago ? '✔️ Pago' : '💰 Enviar pro Caixa';
-    btnCaixa.disabled = o.pago;
-    btnCaixa.onclick = () => {
-      if(o.pago) return;
-      if(!confirm('Registrar pagamento no caixa?')) return;
+    // 🧺 SAÍDA - compra das peças
+    const btnCompra = document.createElement('button');
+    btnCompra.textContent = o.pecasCompradas ? '✔️ Peças compradas' : '🧺 Comprar peças';
+    btnCompra.disabled = o.pecasCompradas;
+    btnCompra.onclick = () => confirmarCompraPecas(o, index);
 
-      const caixa = JSON.parse(localStorage.getItem('livroCaixa')||'[]');
-      caixa.unshift({
-        id: Date.now(),
-        tipo: 'entrada',
-        descricao: `Pagamento orçamento - ${o.cliente || ''}`,
-        valor: total,
-        data: new Date().toLocaleString('pt-BR')
-      });
+    // 💰 ENTRADA - pagamento do cliente
+    const btnPago = document.createElement('button');
+    btnPago.textContent = o.pago ? '✔️ Pago' : '💰 Confirmar pagamento';
+    btnPago.disabled = o.pago;
+    btnPago.onclick = () => confirmarPagamento(o, index);
 
-      localStorage.setItem('livroCaixa', JSON.stringify(caixa));
-      o.pago = true;
-      h[index] = o;
-      setHistorico(h);
-      mostrarHistorico();
-    };
-
-    // 🗑️ BOTÃO EXCLUIR
+    // 🗑️ excluir
     const btnExcluir = document.createElement('button');
     btnExcluir.textContent = '🗑️';
     btnExcluir.onclick = () => {
-      if(confirm('Excluir orçamento?')){
-        h.splice(index,1);
+      if (confirm('Excluir orçamento?')) {
+        h.splice(index, 1);
         setHistorico(h);
         mostrarHistorico();
       }
     };
 
     li.appendChild(document.createElement('br'));
-    li.appendChild(btnCaixa);
-    li.appendChild(btnExcluir);
-
+    li.append(btnCompra, btnPago, btnExcluir);
     listaHistorico.appendChild(li);
   });
 
@@ -202,8 +212,68 @@ function fecharHistorico(){
   modalHistorico.style.display = 'none';
 }
 
-// ================= EXPORTS (CHROME SAFE) =================
-window.recalcular = recalcular;
+// =======================
+// CAIXA
+// =======================
+function confirmarCompraPecas(o, index){
+  if (o.pecasCompradas) return;
+  if (!confirm('Registrar compra das peças no Caixa?')) return;
+
+  const caixa = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
+
+  o.itens
+    .filter(i => i.tipo === 'peca')
+    .forEach(p => {
+      caixa.unshift({
+        id: Date.now() + Math.random(),
+        tipo: 'saida',
+        descricao: `Compra de peça - ${p.nome} (${o.cliente || 'Cliente'})`,
+        valor: p.custo,
+        data: new Date().toLocaleString('pt-BR')
+      });
+    });
+
+  localStorage.setItem('livroCaixa', JSON.stringify(caixa));
+  o.pecasCompradas = true;
+
+  const h = getHistorico();
+  h[index] = o;
+  setHistorico(h);
+
+  alert('Compra das peças registrada no Caixa');
+  mostrarHistorico();
+}
+
+function confirmarPagamento(o, index){
+  if (o.pago) return;
+  if (!confirm('Confirmar pagamento do cliente?')) return;
+
+  const total = o.itens.reduce((s, i) => s + i.valor, 0);
+  const caixa = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
+
+  caixa.unshift({
+    id: Date.now(),
+    tipo: 'entrada',
+    descricao: `Pagamento orçamento - ${o.cliente || 'Cliente'}`,
+    valor: total,
+    data: new Date().toLocaleString('pt-BR')
+  });
+
+  localStorage.setItem('livroCaixa', JSON.stringify(caixa));
+  o.pago = true;
+
+  const h = getHistorico();
+  h[index] = o;
+  setHistorico(h);
+
+  alert('Pagamento registrado no Caixa');
+  mostrarHistorico();
+}
+
+// =======================
+// EXPORTS
+// =======================
 window.salvarOrcamento = salvarOrcamento;
 window.mostrarHistorico = mostrarHistorico;
 window.fecharHistorico = fecharHistorico;
+window.recalcular = recalcular;
