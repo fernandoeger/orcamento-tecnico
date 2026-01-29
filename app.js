@@ -229,16 +229,10 @@ function carregarOrcamento(orc) {
     });
   }
 
-  document.getElementById('outrosDesc').value = orc.outrosDesc || '';
-  document.getElementById('observacoes').value = orc.observacoes || '';
-
-  fecharHistorico();
-  recalcular();
-}
 function lancarNoCaixa() {
   const totalText = document.getElementById('custo').innerText;
   const valor = Number(
-    totalText.replace('R$', '').replace('.', '').replace(',', '.').trim()
+    totalText.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()
   );
 
   if (!valor || valor <= 0) {
@@ -255,6 +249,14 @@ function lancarNoCaixa() {
     valor,
     data: new Date().toLocaleString('pt-BR')
   };
+
+  // grava pendente
+  localStorage.setItem('caixa_pendente', JSON.stringify(movimento));
+
+  // 🔥 ABRE O CAIXA AUTOMATICAMENTE
+  window.location.href = 'caixa.html';
+}
+
 
   // salva pendente
   localStorage.setItem('caixa_pendente', JSON.stringify(movimento));
