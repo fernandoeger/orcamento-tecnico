@@ -1,10 +1,10 @@
-const CACHE_NAME = 'orcamento-cache-v14';
+const CACHE_NAME = 'orcamento-cache-v15'; // 🔥 MUDE O NÚMERO SEMPRE
 
 const ASSETS = [
+  './',
   './index.html',
-  './caixa.html',
-  './impressora.html',
   './orcamento-pc-v2.js',
+  './caixa.html',
   './caixa.js',
   './manifest.json',
   './icon-192.png',
@@ -13,10 +13,12 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
-  );
   self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(ASSETS);
+    })
+  );
 });
 
 self.addEventListener('activate', event => {
@@ -36,10 +38,14 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request).catch(() => {
-        return caches.match('./index.html');
-      });
-    })
+    fetch(event.request)
+      .then(response => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, clone);
+        });
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
