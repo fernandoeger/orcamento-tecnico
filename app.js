@@ -134,51 +134,92 @@ function salvarOrcamento(){
 
 // ================== HISTÓRICO ==================
 function mostrarHistorico(){
-  const h = JSON.parse(localStorage.getItem('orcamentos')||'[]');
+  const h = JSON.parse(localStorage.getItem('orcamentos') || '[]');
   const lista = listaHistorico;
   lista.innerHTML = '';
 
   if (!h.length){
     lista.innerHTML = '<li>Nenhum orçamento salvo.</li>';
-    modalHistorico.style.display='block';
+    modalHistorico.style.display = 'block';
     return;
   }
 
-  h.forEach((orc,i)=>{
+  h.forEach((orc, i) => {
     const li = document.createElement('li');
-    li.innerHTML = `<strong>${orc.cliente||'Cliente'}</strong> - ${orc.aparelho||''}<br><small>${orc.data}</small>`;
-    li.style.cursor='pointer';
-    li.onclick=()=>carregarOrcamento(orc);
+    li.style.borderBottom = '1px solid #eee';
+    li.style.padding = '8px 0';
 
-    const acoes=document.createElement('div');
+    // ===== INFO =====
+    const info = document.createElement('div');
+    info.style.cursor = 'pointer';
 
-    const b1=document.createElement('button');
-    b1.textContent='➖ Saída';
-    b1.onclick=e=>{e.stopPropagation();lancarSaidaNoCaixa(orc);};
+    const statusTexto = orc.status === 'pago' ? 'PAGO' : 'EM ABERTO';
+    const statusCor = orc.status === 'pago' ? 'green' : 'orange';
 
-    const b2=document.createElement('button');
-    b2.textContent='➕ Entrada';
-    b2.onclick=e=>{e.stopPropagation();lancarEntradaNoCaixa(orc);};
+    info.innerHTML = `
+      <strong>${orc.cliente || 'Cliente'}</strong> – ${orc.aparelho || ''}<br>
+      <small>${orc.data || ''}</small><br>
+      <small>
+        Status: <strong style="color:${statusCor}">${statusTexto}</strong>
+      </small>
+    `;
 
-    const bx=document.createElement('button');
-    bx.textContent='🗑️';
-    bx.onclick=e=>{
+    info.onclick = () => carregarOrcamento(orc);
+
+    // ===== AÇÕES =====
+    const acoes = document.createElement('div');
+    acoes.style.marginTop = '6px';
+    acoes.style.display = 'flex';
+    acoes.style.gap = '6px';
+    acoes.style.flexWrap = 'wrap';
+
+    const b1 = document.createElement('button');
+    b1.textContent = '➖ Saída';
+    b1.onclick = e => {
       e.stopPropagation();
-      h.splice(i,1);
-      localStorage.setItem('orcamentos',JSON.stringify(h));
+      lancarSaidaNoCaixa(orc);
       mostrarHistorico();
     };
 
-    acoes.append(b1,b2,bx);
+    const b2 = document.createElement('button');
+    b2.textContent = '➕ Entrada';
+    b2.onclick = e => {
+      e.stopPropagation();
+      lancarEntradaNoCaixa(orc);
+      mostrarHistorico();
+    };
+
+    const bx = document.createElement('button');
+    bx.textContent = '🗑️';
+    bx.onclick = e => {
+      e.stopPropagation();
+      if (!confirm('Excluir este orçamento?')) return;
+      h.splice(i, 1);
+      localStorage.setItem('orcamentos', JSON.stringify(h));
+      mostrarHistorico();
+    };
+
+    // ===== DESATIVAÇÃO VISUAL =====
+    if (orc.saidaLancada) {
+      b1.disabled = true;
+      b1.style.opacity = '0.5';
+      b1.style.cursor = 'not-allowed';
+    }
+
+    if (orc.entradaLancada) {
+      b2.disabled = true;
+      b2.style.opacity = '0.5';
+      b2.style.cursor = 'not-allowed';
+    }
+
+    acoes.append(b1, b2, bx);
+
+    li.appendChild(info);
     li.appendChild(acoes);
     lista.appendChild(li);
   });
 
-  modalHistorico.style.display='block';
-}
-
-function fecharHistorico(){
-  modalHistorico.style.display='none';
+  modalHistorico.style.display = 'block';
 }
 
 // ================== CAIXA ==================
