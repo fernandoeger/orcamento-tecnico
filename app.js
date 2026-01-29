@@ -274,6 +274,12 @@ function calcularLucroOrcamento(orc) {
   return entrada - saida;
 }
 
+function atualizarOrcamento(orcAtualizado) {
+  const lista = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+  const nova = lista.map(o => o.id === orcAtualizado.id ? orcAtualizado : o);
+  localStorage.setItem('orcamentos', JSON.stringify(nova));
+}
+
 // ================== INIT ==================
 document.addEventListener('DOMContentLoaded',()=>{
   renderizarServicos();
