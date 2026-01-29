@@ -146,4 +146,6 @@ function verificarEntradaPendente() {
 document.addEventListener('DOMContentLoaded', () => {
   const caixa = getCaixa();
   renderTudo(caixa);
+  verificarEntradaPendente();
 });
+
