@@ -201,29 +201,33 @@ function carregarOrcamento(orc) {
   valorMaoObraInput.value = orc.valorMaoObra || 120;
   valorMaoObraInput.disabled = !maoObraCheck.checked;
 
-  // Serviços
-  orc.servicos.forEach(serv => {
-    const checkbox = document.querySelector(
-      `#servicosContainer input[type="checkbox"][data-item="${serv.nome}"]`
-    );
-    const input = document.querySelector(
-      `#servicosContainer input[type="number"][data-item="${serv.nome}"]`
-    );
+  // 🔒 SERVIÇOS (com proteção)
+  if (Array.isArray(orc.servicos)) {
+    orc.servicos.forEach(serv => {
+      const checkbox = document.querySelector(
+        `#servicosContainer input[type="checkbox"][data-item="${serv.nome}"]`
+      );
+      const input = document.querySelector(
+        `#servicosContainer input[type="number"][data-item="${serv.nome}"]`
+      );
 
-    if (checkbox && input) {
-      checkbox.checked = serv.selecionado;
-      input.disabled = !serv.selecionado;
-      input.value = serv.valor;
-    }
-  });
+      if (checkbox && input) {
+        checkbox.checked = serv.selecionado;
+        input.disabled = !serv.selecionado;
+        input.value = serv.valor;
+      }
+    });
+  }
 
-  // Peças
-  orc.pecas.forEach(peca => {
-    const input = document.querySelector(
-      `input.peca[data-item="${peca.nome}"]`
-    );
-    if (input) input.value = peca.valor;
-  });
+  // 🔒 PEÇAS (com proteção)
+  if (Array.isArray(orc.pecas)) {
+    orc.pecas.forEach(peca => {
+      const input = document.querySelector(
+        `input.peca[data-item="${peca.nome}"]`
+      );
+      if (input) input.value = peca.valor;
+    });
+  }
 
   document.getElementById('outrosDesc').value = orc.outrosDesc || '';
   document.getElementById('observacoes').value = orc.observacoes || '';
