@@ -7,7 +7,7 @@ function setCaixa(lista) {
   localStorage.setItem('livroCaixa', JSON.stringify(lista));
 }
 
-// ================== SALVAR MOVIMENTO ==================
+// ================== SALVAR MOVIMENTO MANUAL ==================
 function salvarMovimento() {
   const tipo = document.getElementById('tipo').value;
   const descricao = document.getElementById('descricao').value.trim();
@@ -20,7 +20,7 @@ function salvarMovimento() {
 
   const movimento = {
     id: Date.now().toString(),
-    tipo, // entrada | saida
+    tipo,
     descricao,
     valor,
     data: new Date().toLocaleString('pt-BR')
@@ -118,34 +118,9 @@ function renderLista(lista) {
     ul.appendChild(li);
   });
 }
-function verificarEntradaPendente() {
-  const pendente = localStorage.getItem('caixa_pendente');
-  if (!pendente) return;
-
-  const movimento = JSON.parse(pendente);
-
-  const confirmar = confirm(
-    `Lançar no caixa?\n\n${movimento.descricao}\nValor: R$ ${movimento.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-  );
-
-  if (confirmar) {
-    const caixa = getCaixa();
-    caixa.unshift({
-      id: Date.now().toString(),
-      ...movimento
-    });
-    setCaixa(caixa);
-    renderTudo(caixa);
-    alert('Entrada lançada no caixa.');
-  }
-
-  localStorage.removeItem('caixa_pendente');
-}
 
 // ================== INIT ==================
 document.addEventListener('DOMContentLoaded', () => {
   const caixa = getCaixa();
   renderTudo(caixa);
-  verificarEntradaPendente();
 });
-
