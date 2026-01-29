@@ -207,22 +207,30 @@ function salvarNoCaixa(m){
   localStorage.setItem('livroCaixa',JSON.stringify(c));
 }
 
-function lancarSaidaNoCaixa(orc) {
-  const valor = calcularTotalPecasSemLucro(orc);
+function lancarEntradaNoCaixa(orc) {
+  if (orc.entradaLancada) {
+    alert('Entrada já lançada para este orçamento.');
+    return;
+  }
 
+  const valor = calcularTotalOrcamento(orc);
   if (!valor || valor <= 0) {
-    alert('Orçamento não possui peças para lançar como saída.');
+    alert('Orçamento sem valor.');
     return;
   }
 
   salvarNoCaixa({
-    tipo: 'saida',
-    descricao: `Compra de peças – ${orc.cliente || 'Cliente'} (${orc.aparelho || ''})`,
+    tipo: 'entrada',
+    descricao: `Pagamento – ${orc.cliente}`,
     valor,
     data: new Date().toLocaleString('pt-BR')
   });
 
-  alert('Saída lançada no Caixa (valor real das peças).');
+  orc.entradaLancada = true;
+  orc.status = 'pago';
+  atualizarOrcamento(orc);
+
+  alert('Entrada lançada. Orçamento marcado como PAGO.');
 }
 
 function lancarSaidaNoCaixa(orc) {
