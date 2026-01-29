@@ -225,13 +225,30 @@ function lancarSaidaNoCaixa(orc) {
   alert('Saída lançada no Caixa (valor real das peças).');
 }
 
-function lancarEntradaNoCaixa(orc) {
-  const valor = calcularTotalOrcamento(orc); // COM lucro
-
-  if (!valor || valor <= 0) {
-    alert('Orçamento sem valor.');
+function lancarSaidaNoCaixa(orc) {
+  if (orc.saidaLancada) {
+    alert('Saída já lançada para este orçamento.');
     return;
   }
+
+  const valor = calcularTotalPecasSemLucro(orc);
+  if (!valor || valor <= 0) {
+    alert('Orçamento não possui peças.');
+    return;
+  }
+
+  salvarNoCaixa({
+    tipo: 'saida',
+    descricao: `Compra de peças – ${orc.cliente}`,
+    valor,
+    data: new Date().toLocaleString('pt-BR')
+  });
+
+  orc.saidaLancada = true;
+  atualizarOrcamento(orc);
+
+  alert('Saída lançada com sucesso.');
+}
 
   salvarNoCaixa({
     tipo: 'entrada',
