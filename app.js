@@ -200,6 +200,7 @@ function mostrarHistorico(){
     const li = document.createElement('li');
     li.style.borderBottom = '1px solid #eee';
     li.style.padding = '8px 0';
+    li.appendChild(acoes);
 
     const statusTexto = orc.status === 'pago' ? 'PAGO' : 'EM ABERTO';
     const statusCor = orc.status === 'pago' ? 'green' : 'orange';
