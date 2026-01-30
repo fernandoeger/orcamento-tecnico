@@ -57,6 +57,8 @@ window.addEventListener('beforeprint', preencherDadosEmpresa);
 // ================== SERVIÇOS ==================
 function renderizarServicos() {
   const container = document.getElementById('servicosContainer');
+  if (!container) return;
+
   container.innerHTML = '';
 
   Object.entries(PRECOS_SUGERIDOS).forEach(([nome, preco]) => {
@@ -88,7 +90,7 @@ function renderizarServicos() {
 function getItensCobrados(){
   const itens = [];
 
-  if (incluirMaoObra.checked) {
+  if (incluirMaoObra && incluirMaoObra.checked) {
     const v = Number(valorMaoObra.value || 0);
     if (v > 0) itens.push({ nome: 'Mão de Obra', valor: v });
   }
@@ -105,7 +107,7 @@ function getItensCobrados(){
     const v = Number(input.value || 0);
     if (v > 0) {
       let nome = input.dataset.item;
-      if (nome === 'Outros' && outrosDesc.value.trim()) {
+      if (nome === 'Outros' && outrosDesc && outrosDesc.value.trim()) {
         nome = `Outros (${outrosDesc.value.trim()})`;
       }
       itens.push({ nome, valor: v * 1.25 });
@@ -121,9 +123,14 @@ function recalcular(){
 
   const itens = getItensCobrados();
   const total = itens.reduce((s,i)=>s+i.valor,0);
-  custo.innerText = 'R$ ' + formatBR(total);
+
+  if (custo) {
+    custo.innerText = 'R$ ' + formatBR(total);
+  }
 
   const tbody = document.querySelector('#cobrancaTable tbody');
+  if (!tbody) return;
+
   tbody.innerHTML = '';
 
   if (!itens.length) {
@@ -140,6 +147,96 @@ function recalcular(){
   });
 }
 
+// ================== SALVAR ==================
+function salvarOrcamento(){
+  const orcamento = {
+    id: Date.now(),
+    data: new Date().toLocaleString('pt-BR'),
+    cliente: cliente?.value?.trim() || '',
+    aparelho: descricaoAparelho?.value?.trim() || '',
+    status: 'aberto',
+    saidaLancada: false,
+    entradaLancada: false,
+    maoObraIncluida: incluirMaoObra?.checked || false,
+    valorMaoObra: Number(valorMaoObra?.value || 0),
+    servicos: [...document.querySelectorAll('#servicosContainer .servico-item')].map(div=>{
+      const cb = div.querySelector('input[type="checkbox"]');
+      const input = div.querySelector('input[type="number"]');
+      return {
+        nome: input.dataset.item,
+        selecionado: cb.checked,
+        valor: Number(input.value || 0)
+      };
+    }),
+    pecas: [...document.querySelectorAll('input.peca')].map(i=>({
+      nome: i.dataset.item,
+      valor: Number(i.value || 0)
+    })),
+    outrosDesc: outrosDesc?.value || '',
+    observacoes: observacoes?.value || ''
+  };
+
+  const h = JSON.parse(localStorage.getItem('orcamentos')||'[]');
+  h.unshift(orcamento);
+  localStorage.setItem('orcamentos', JSON.stringify(h));
+
+  alert('Orçamento salvo!');
+}
+
+// ================== HISTÓRICO ==================
+function mostrarHistorico(){
+  const h = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+  if (!listaHistorico || !modalHistorico) return;
+
+  listaHistorico.innerHTML = '';
+
+  if (!h.length){
+    listaHistorico.innerHTML = '<li>Nenhum orçamento salvo.</li>';
+    modalHistorico.style.display = 'block';
+    return;
+  }
+
+  h.forEach((orc, i) => {
+    const li = document.createElement('li');
+    li.style.borderBottom = '1px solid #eee';
+    li.style.padding = '8px 0';
+
+    const statusTexto = orc.status === 'pago' ? 'PAGO' : 'EM ABERTO';
+    const statusCor = orc.status === 'pago' ? 'green' : 'orange';
+
+    const info = document.createElement('div');
+    info.innerHTML = `
+      <strong>${orc.cliente || 'Cliente'}</strong> – ${orc.aparelho || ''}<br>
+      <small>${orc.data}</small><br>
+      <small>Status: <strong style="color:${statusCor}">${statusTexto}</strong></small>
+    `;
+    info.style.cursor = 'pointer';
+    info.onclick = () => {
+      if (typeof carregarOrcamento === 'function') {
+        carregarOrcamento(orc);
+        preencherDadosEmpresa();
+      }
+    };
+
+    const acoes = document.createElement('div');
+
+    const bx = document.createElement('button');
+    bx.textContent='🗑️';
+    bx.onclick=e=>{
+      e.stopPropagation();
+      h.splice(i,1);
+      localStorage.setItem('orcamentos',JSON.stringify(h));
+      mostrarHistorico();
+    };
+
+    acoes.appendChild(bx);
+    li.append(info,acoes);
+    listaHistorico.appendChild(li);
+  });
+
+  modalHistorico.style.display='block';
+}
+
 // ================== INIT ==================
 document.addEventListener('DOMContentLoaded',()=>{
   renderizarServicos();
@@ -151,4 +248,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 window.recalcular = recalcular;
 window.salvarOrcamento = salvarOrcamento;
 window.mostrarHistorico = mostrarHistorico;
-window.fecharHistorico = () => modalHistorico.style.display = 'none';
+window.fecharHistorico = function () {
+  if (modalHistorico) modalHistorico.style.display = 'none';
+};
