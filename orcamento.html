@@ -21,6 +21,21 @@
   <link rel="apple-touch-icon" href="icon-192.png">
 
   <style>
+  .cabecalho-orcamento{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-bottom:10px;
+}
+.logo-empresa{
+  width:80px;
+  max-height:80px;
+  object-fit:contain;
+}
+.dados-empresa{
+  font-size:14px;
+  line-height:1.4;
+}
     @media screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) {
       body::before {
         content: '';
@@ -213,6 +228,11 @@
   </div>
 
   <div class="section resumo-final">
+    <div class="cabecalho-orcamento">
+  <img id="empresaLogo" class="logo-empresa">
+  <div id="empresaDados" class="dados-empresa"></div>
+</div>
+<hr>
     <!-- Cabeçalho para impressão (só aparece no PDF) -->
     <div class="cabecalho-print" id="cabecalhoPrint"></div>
 
@@ -281,7 +301,7 @@
       </div>
     </div>
   </div>
-
+<script src="config.js"></script>
 <script src="app.js" defer></script>
 <head>
   <meta charset="utf-8" />
