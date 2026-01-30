@@ -284,10 +284,11 @@ document.addEventListener('DOMContentLoaded',()=>{
   preencherDadosEmpresa();
 });
 
-// ================== GLOBAIS ==================
+// ================== EXPOR FUNÇÕES PARA BOTÕES HTML ==================
 window.recalcular = recalcular;
 window.salvarOrcamento = salvarOrcamento;
 window.mostrarHistorico = mostrarHistorico;
+
 window.fecharHistorico = function () {
   if (modalHistorico) modalHistorico.style.display = 'none';
 };
