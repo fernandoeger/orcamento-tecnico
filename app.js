@@ -19,6 +19,7 @@ function formatBR(value){
   });
 }
 
+// ================== EMPRESA / PDF ==================
 function preencherDadosEmpresa() {
   if (!window.EMPRESA) return;
 
@@ -26,16 +27,16 @@ function preencherDadosEmpresa() {
   const dados = document.getElementById('empresaDados');
   const cabecalhoPrint = document.getElementById('cabecalhoPrint');
 
-  if (logo) {
+  if (logo && EMPRESA.logo) {
     logo.src = EMPRESA.logo;
-    logo.alt = EMPRESA.nome;
+    logo.alt = EMPRESA.nome || '';
   }
 
   if (dados) {
     dados.innerHTML = `
-      <strong>${EMPRESA.nome}</strong><br>
+      <strong>${EMPRESA.nome || ''}</strong><br>
       ${EMPRESA.slogan || ''}<br>
-      CNPJ: ${EMPRESA.cnpj}<br>
+      CNPJ: ${EMPRESA.cnpj || ''}<br>
       ${EMPRESA.telefone || ''}<br>
       ${EMPRESA.endereco || ''}
     `;
@@ -43,12 +44,16 @@ function preencherDadosEmpresa() {
 
   if (cabecalhoPrint) {
     cabecalhoPrint.innerHTML = `
-      <h1>${EMPRESA.nome}</h1>
+      <h1>${EMPRESA.nome || ''}</h1>
       <p>${EMPRESA.slogan || ''}</p>
-      <p>CNPJ: ${EMPRESA.cnpj}</p>
+      <p>CNPJ: ${EMPRESA.cnpj || ''}</p>
     `;
   }
 }
+
+// garante cabeçalho sempre antes do PDF
+window.addEventListener('beforeprint', preencherDadosEmpresa);
+
 // ================== SERVIÇOS ==================
 function renderizarServicos() {
   const container = document.getElementById('servicosContainer');
@@ -112,6 +117,8 @@ function getItensCobrados(){
 
 // ================== CALCULAR ==================
 function recalcular(){
+  preencherDadosEmpresa();
+
   const itens = getItensCobrados();
   const total = itens.reduce((s,i)=>s+i.valor,0);
   custo.innerText = 'R$ ' + formatBR(total);
@@ -133,177 +140,6 @@ function recalcular(){
   });
 }
 
-// ================== SALVAR ==================
-function salvarOrcamento(){
-  const orcamento = {
-    id: Date.now(),
-    data: new Date().toLocaleString('pt-BR'),
-    cliente: cliente.value.trim(),
-    aparelho: descricaoAparelho.value.trim(),
-    status: 'aberto',
-    saidaLancada: false,
-    entradaLancada: false,
-    maoObraIncluida: incluirMaoObra.checked,
-    valorMaoObra: Number(valorMaoObra.value||0),
-    servicos: [...document.querySelectorAll('#servicosContainer .servico-item')].map(div=>{
-      const cb = div.querySelector('input[type="checkbox"]');
-      const input = div.querySelector('input[type="number"]');
-      return { nome: input.dataset.item, selecionado: cb.checked, valor: Number(input.value||0) };
-    }),
-    pecas: [...document.querySelectorAll('input.peca')].map(i=>({
-      nome:i.dataset.item, valor:Number(i.value||0)
-    })),
-    outrosDesc: outrosDesc.value,
-    observacoes: observacoes.value
-  };
-
-  const h = JSON.parse(localStorage.getItem('orcamentos')||'[]');
-  h.unshift(orcamento);
-  localStorage.setItem('orcamentos', JSON.stringify(h));
-  alert('Orçamento salvo!');
-}
-
-// ================== HISTÓRICO ==================
-function mostrarHistorico(){
-  const h = JSON.parse(localStorage.getItem('orcamentos') || '[]');
-  listaHistorico.innerHTML = '';
-
-  if (!h.length){
-    listaHistorico.innerHTML = '<li>Nenhum orçamento salvo.</li>';
-    modalHistorico.style.display = 'block';
-    return;
-  }
-
-  h.forEach((orc, i) => {
-    const li = document.createElement('li');
-    li.style.borderBottom = '1px solid #eee';
-    li.style.padding = '8px 0';
-
-    const statusTexto = orc.status === 'pago' ? 'PAGO' : 'EM ABERTO';
-    const statusCor = orc.status === 'pago' ? 'green' : 'orange';
-
-    const info = document.createElement('div');
-    info.innerHTML = `
-      <strong>${orc.cliente || 'Cliente'}</strong> – ${orc.aparelho || ''}<br>
-      <small>${orc.data}</small><br>
-      <small>Status: <strong style="color:${statusCor}">${statusTexto}</strong></small>
-    `;
-    info.style.cursor='pointer';
-    info.onclick=()=>carregarOrcamento(orc);
-
-    const acoes=document.createElement('div');
-
-    const b1=document.createElement('button');
-    b1.textContent='➖ Saída';
-    b1.onclick=e=>{e.stopPropagation();lancarSaidaNoCaixa(orc);mostrarHistorico();};
-
-    const b2=document.createElement('button');
-    b2.textContent='➕ Entrada';
-    b2.onclick=e=>{e.stopPropagation();lancarEntradaNoCaixa(orc);mostrarHistorico();};
-
-    const bx=document.createElement('button');
-    bx.textContent='🗑️';
-    bx.onclick=e=>{
-      e.stopPropagation();
-      h.splice(i,1);
-      localStorage.setItem('orcamentos',JSON.stringify(h));
-      mostrarHistorico();
-    };
-
-    if (orc.saidaLancada) b1.disabled = true;
-    if (orc.entradaLancada) b2.disabled = true;
-
-    acoes.append(b1,b2,bx);
-    li.append(info,acoes);
-    listaHistorico.appendChild(li);
-  });
-
-  modalHistorico.style.display='block';
-}
-
-// ================== CAIXA ==================
-function calcularTotalOrcamento(orc){
-  let t=0;
-  if(orc.maoObraIncluida) t+=orc.valorMaoObra;
-  orc.servicos.forEach(s=>{ if(s.selecionado) t+=s.valor; });
-  orc.pecas.forEach(p=>{ t+=p.valor*1.25; });
-  return t;
-}
-
-function calcularTotalPecasSemLucro(orc){
-  return orc.pecas.reduce((s,p)=>s+Number(p.valor||0),0);
-}
-
-function salvarNoCaixa(m){
-  const c = JSON.parse(localStorage.getItem('livroCaixa')||'[]');
-  c.unshift({id:Date.now(),...m});
-  localStorage.setItem('livroCaixa',JSON.stringify(c));
-}
-
-function lancarEntradaNoCaixa(orc){
-  if(orc.entradaLancada) return alert('Entrada já lançada.');
-  salvarNoCaixa({
-    tipo:'entrada',
-    descricao:`Pagamento – ${orc.cliente}`,
-    valor:calcularTotalOrcamento(orc),
-    data:new Date().toLocaleString('pt-BR')
-  });
-  orc.entradaLancada=true;
-  orc.status='pago';
-  atualizarOrcamento(orc);
-}
-
-function lancarSaidaNoCaixa(orc){
-  if(orc.saidaLancada) return alert('Saída já lançada.');
-  salvarNoCaixa({
-    tipo:'saida',
-    descricao:`Compra de peças – ${orc.cliente}`,
-    valor:calcularTotalPecasSemLucro(orc),
-    data:new Date().toLocaleString('pt-BR')
-  });
-  orc.saidaLancada=true;
-  atualizarOrcamento(orc);
-}
-
-function atualizarOrcamento(orcAtualizado){
-  const lista = JSON.parse(localStorage.getItem('orcamentos')||'[]');
-  localStorage.setItem(
-    'orcamentos',
-    JSON.stringify(lista.map(o=>o.id===orcAtualizado.id?orcAtualizado:o))
-  );
-}
-
-function preencherDadosEmpresa() {
-  if (!window.EMPRESA) return;
-
-  const logo = document.getElementById('empresaLogo');
-  const dados = document.getElementById('empresaDados');
-  const cabecalhoPrint = document.getElementById('cabecalhoPrint');
-
-  if (logo) {
-    logo.src = EMPRESA.logo;
-    logo.alt = EMPRESA.nome;
-  }
-
-  if (dados) {
-    dados.innerHTML = `
-      <strong>${EMPRESA.nome}</strong><br>
-      ${EMPRESA.slogan || ''}<br>
-      CNPJ: ${EMPRESA.cnpj}<br>
-      ${EMPRESA.telefone || ''}<br>
-      ${EMPRESA.endereco || ''}
-    `;
-  }
-
-  if (cabecalhoPrint) {
-    cabecalhoPrint.innerHTML = `
-      <h1>${EMPRESA.nome}</h1>
-      <p>${EMPRESA.slogan || ''}</p>
-      <p>CNPJ: ${EMPRESA.cnpj}</p>
-    `;
-  }
-}
-
 // ================== INIT ==================
 document.addEventListener('DOMContentLoaded',()=>{
   renderizarServicos();
@@ -311,11 +147,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   preencherDadosEmpresa();
 });
 
-// ================== FUNÇÕES GLOBAIS (necessário para botões inline) ==================
-window.fecharHistorico = function () {
-  modalHistorico.style.display = 'none';
-};
-
-window.mostrarHistorico = mostrarHistorico;
-window.salvarOrcamento = salvarOrcamento;
+// ================== GLOBAIS ==================
 window.recalcular = recalcular;
+window.salvarOrcamento = salvarOrcamento;
+window.mostrarHistorico = mostrarHistorico;
+window.fecharHistorico = () => modalHistorico.style.display = 'none';
