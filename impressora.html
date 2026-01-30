@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Orçamento de Impressora</title>
 
+<!-- CONFIG DA EMPRESA -->
+<script src="config.js"></script>
+
 <style>
 body{
   font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
@@ -43,6 +46,8 @@ input{
 }
 .btn.secondary{background:#6c757d}
 .btn.history{background:#28a745}
+
+/* serviços */
 .linha-servico{
   display:grid;
   grid-template-columns: 28px 1fr;
@@ -55,8 +60,29 @@ input{
 }
 .linha-servico .nome{font-weight:600}
 .linha-servico .valor{margin-top:6px;max-width:160px}
+
+/* cabeçalho empresa (PDF) */
+.cabecalho-orcamento{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-bottom:10px;
+}
+.logo-empresa{
+  width:80px;
+  max-height:80px;
+  object-fit:contain;
+}
+.dados-empresa{
+  font-size:14px;
+  line-height:1.4;
+}
+
+/* histórico */
 ul{list-style:none;padding:0}
 li{padding:12px 0;border-bottom:1px solid #eee}
+
+/* impressão */
 @media print{
   body>*:not(.resumo-final){display:none!important}
   .resumo-final{display:block!important;background:#fff;padding:20px}
@@ -66,7 +92,6 @@ li{padding:12px 0;border-bottom:1px solid #eee}
 </head>
 
 <body>
-
 
 <a href="index.html" class="btn secondary">🏠 Menu</a>
 <a href="orcamento.html" class="btn secondary">💻 Informática</a>
@@ -93,18 +118,31 @@ li{padding:12px 0;border-bottom:1px solid #eee}
   <button class="btn secondary" onclick="window.print()">PDF</button>
 </div>
 
+<!-- PDF -->
 <div class="section resumo-final" style="display:none">
-  
+
+  <!-- DADOS DA EMPRESA -->
+  <div class="cabecalho-orcamento">
+    <img id="empresaLogo" class="logo-empresa">
+    <div id="empresaDados" class="dados-empresa"></div>
+  </div>
+  <hr>
+
   <h2>Orçamento de Impressora</h2>
   <p><strong>Cliente:</strong> <span id="pdfCliente"></span></p>
   <p><strong>Impressora:</strong> <span id="pdfModelo"></span></p>
   <p><strong>Data:</strong> <span id="pdfData"></span></p>
+
   <table style="width:100%;border-collapse:collapse">
     <tbody id="pdfServicos"></tbody>
   </table>
-  <h3 style="text-align:right">Total: R$ <span id="pdfTotal"></span></h3>
+
+  <h3 style="text-align:right">
+    Total: R$ <span id="pdfTotal"></span>
+  </h3>
 </div>
 
+<!-- HISTÓRICO -->
 <div id="modalHistorico" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6)">
   <div style="background:#fff;margin:40px auto;padding:20px;max-width:700px;border-radius:10px">
     <h3>Histórico de Impressoras</h3>
@@ -114,6 +152,7 @@ li{padding:12px 0;border-bottom:1px solid #eee}
 </div>
 
 <script>
+/* ===== SERVIÇOS ===== */
 const SERVICOS_IMPRESSORA={
   "Instalação USB":50,
   "Instalação Wi-Fi":80,
@@ -144,28 +183,54 @@ function renderizarServicos(){
   });
 }
 
+/* ===== EMPRESA ===== */
+function preencherDadosEmpresa(){
+  if(typeof EMPRESA==='undefined') return;
+
+  const logo=document.getElementById('empresaLogo');
+  const dados=document.getElementById('empresaDados');
+
+  if(logo){
+    logo.src=EMPRESA.logo;
+    logo.alt=EMPRESA.nome;
+  }
+  if(dados){
+    dados.innerHTML=`
+      <strong>${EMPRESA.nome}</strong><br>
+      ${EMPRESA.slogan?EMPRESA.slogan+'<br>':''}
+      CNPJ: ${EMPRESA.cnpj}<br>
+      WhatsApp: ${EMPRESA.whatsapp}<br>
+      ${EMPRESA.cidade}
+    `;
+  }
+}
+
+/* ===== CÁLCULO ===== */
 function calcular(){
-  let total=0;
+  let totalV=0;
   pdfServicos.innerHTML='';
   document.querySelectorAll('.linha-servico').forEach(l=>{
     if(l.querySelector('input[type="checkbox"]').checked){
       const nome=l.querySelector('.nome').textContent;
       const val=Number(l.querySelector('.valor').value||0);
-      total+=val;
-      pdfServicos.innerHTML+=`<tr><td>${nome}</td><td style="text-align:right">R$ ${val.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`;
+      totalV+=val;
+      pdfServicos.innerHTML+=`
+        <tr>
+          <td>${nome}</td>
+          <td style="text-align:right">
+            R$ ${val.toLocaleString('pt-BR',{minimumFractionDigits:2})}
+          </td>
+        </tr>`;
     }
   });
-  totalSpan(total);
-}
-
-function totalSpan(t){
-  total.innerText='R$ '+t.toLocaleString('pt-BR',{minimumFractionDigits:2});
-  pdfTotal.innerText=t.toLocaleString('pt-BR',{minimumFractionDigits:2});
+  total.innerText='R$ '+totalV.toLocaleString('pt-BR',{minimumFractionDigits:2});
+  pdfTotal.innerText=totalV.toLocaleString('pt-BR',{minimumFractionDigits:2});
   pdfCliente.innerText=cliente.value||'—';
   pdfModelo.innerText=modelo.value||'—';
   pdfData.innerText=new Date().toLocaleString('pt-BR');
 }
 
+/* ===== SALVAR ===== */
 function salvarOrcamento(){
   const lista=JSON.parse(localStorage.getItem('orcamentos')||'[]');
   const serv=[];
@@ -189,13 +254,21 @@ function salvarOrcamento(){
   alert('Orçamento salvo');
 }
 
+/* ===== HISTÓRICO ===== */
 function mostrarHistorico(){
   listaHistorico.innerHTML='';
-  const h=JSON.parse(localStorage.getItem('orcamentos')||[]).filter(o=>o.tipo==='impressora');
+  const h=JSON.parse(localStorage.getItem('orcamentos')||[])
+    .filter(o=>o.tipo==='impressora');
+
   h.forEach(o=>{
     let t=0;o.servicos.forEach(s=>t+=s.valor);
     const li=document.createElement('li');
-    li.innerHTML=`<strong>${o.cliente}</strong><br>${o.equipamento}<br>Total: R$ ${t.toLocaleString('pt-BR',{minimumFractionDigits:2})}<br>Status: ${o.status.toUpperCase()}`;
+    li.innerHTML=`
+      <strong>${o.cliente}</strong><br>
+      ${o.equipamento}<br>
+      Total: R$ ${t.toLocaleString('pt-BR',{minimumFractionDigits:2})}<br>
+      Status: ${o.status.toUpperCase()}
+    `;
     const b=document.createElement('button');
     b.className='btn';
     b.textContent=o.status==='pago'?'✔️ Pago':'💰 Confirmar pagamento';
@@ -225,15 +298,21 @@ function confirmarPagamento(o){
 
 function atualizar(o){
   const h=JSON.parse(localStorage.getItem('orcamentos')||[]);
-  localStorage.setItem('orcamentos',JSON.stringify(h.map(x=>x.id===o.id?o:x)));
+  localStorage.setItem('orcamentos',JSON.stringify(
+    h.map(x=>x.id===o.id?o:x)
+  ));
 }
 
 function fecharHistorico(){
   modalHistorico.style.display='none';
 }
 
-document.addEventListener('DOMContentLoaded',renderizarServicos);
-preencherDadosEmpresa();
+/* ===== INIT ===== */
+document.addEventListener('DOMContentLoaded',()=>{
+  renderizarServicos();
+  preencherDadosEmpresa();
+});
 </script>
+
 </body>
 </html>
