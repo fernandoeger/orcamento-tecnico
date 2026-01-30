@@ -220,16 +220,55 @@ function mostrarHistorico(){
 
     const acoes = document.createElement('div');
 
-    const bx = document.createElement('button');
-    bx.textContent='🗑️';
-    bx.onclick=e=>{
-      e.stopPropagation();
-      h.splice(i,1);
-      localStorage.setItem('orcamentos',JSON.stringify(h));
-      mostrarHistorico();
-    };
+    const acoes = document.createElement('div');
 
-    acoes.appendChild(bx);
+// ➖ SAÍDA
+const b1 = document.createElement('button');
+b1.textContent = '➖ Saída';
+b1.onclick = e => {
+  e.stopPropagation();
+  lancarSaidaNoCaixa(orc);
+  mostrarHistorico();
+};
+if (orc.saidaLancada) b1.disabled = true;
+
+// ➕ ENTRADA
+const b2 = document.createElement('button');
+b2.textContent = '➕ Entrada';
+b2.onclick = e => {
+  e.stopPropagation();
+  lancarEntradaNoCaixa(orc);
+  mostrarHistorico();
+};
+if (orc.entradaLancada) b2.disabled = true;
+
+// 📄 PDF
+const btnPdf = document.createElement('button');
+btnPdf.textContent = '📄 PDF';
+btnPdf.onclick = e => {
+  e.stopPropagation();
+  if (typeof carregarOrcamento === 'function') {
+    carregarOrcamento(orc);
+    preencherDadosEmpresa();
+    setTimeout(() => window.print(), 300);
+  }
+};
+
+// 🗑️ EXCLUIR
+const bx = document.createElement('button');
+bx.textContent = '🗑️';
+bx.onclick = e => {
+  e.stopPropagation();
+  h.splice(i, 1);
+  localStorage.setItem('orcamentos', JSON.stringify(h));
+  mostrarHistorico();
+};
+
+// ORDEM DOS BOTÕES
+acoes.appendChild(b1);
+acoes.appendChild(b2);
+acoes.appendChild(btnPdf);
+acoes.appendChild(bx);
     li.append(info,acoes);
     listaHistorico.appendChild(li);
   });
