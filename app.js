@@ -19,6 +19,36 @@ function formatBR(value){
   });
 }
 
+function preencherDadosEmpresa() {
+  if (!window.EMPRESA) return;
+
+  const logo = document.getElementById('empresaLogo');
+  const dados = document.getElementById('empresaDados');
+  const cabecalhoPrint = document.getElementById('cabecalhoPrint');
+
+  if (logo) {
+    logo.src = EMPRESA.logo;
+    logo.alt = EMPRESA.nome;
+  }
+
+  if (dados) {
+    dados.innerHTML = `
+      <strong>${EMPRESA.nome}</strong><br>
+      ${EMPRESA.slogan || ''}<br>
+      CNPJ: ${EMPRESA.cnpj}<br>
+      ${EMPRESA.telefone || ''}<br>
+      ${EMPRESA.endereco || ''}
+    `;
+  }
+
+  if (cabecalhoPrint) {
+    cabecalhoPrint.innerHTML = `
+      <h1>${EMPRESA.nome}</h1>
+      <p>${EMPRESA.slogan || ''}</p>
+      <p>CNPJ: ${EMPRESA.cnpj}</p>
+    `;
+  }
+}
 // ================== SERVIÇOS ==================
 function renderizarServicos() {
   const container = document.getElementById('servicosContainer');
@@ -243,10 +273,42 @@ function atualizarOrcamento(orcAtualizado){
   );
 }
 
+function preencherDadosEmpresa() {
+  if (!window.EMPRESA) return;
+
+  const logo = document.getElementById('empresaLogo');
+  const dados = document.getElementById('empresaDados');
+  const cabecalhoPrint = document.getElementById('cabecalhoPrint');
+
+  if (logo) {
+    logo.src = EMPRESA.logo;
+    logo.alt = EMPRESA.nome;
+  }
+
+  if (dados) {
+    dados.innerHTML = `
+      <strong>${EMPRESA.nome}</strong><br>
+      ${EMPRESA.slogan || ''}<br>
+      CNPJ: ${EMPRESA.cnpj}<br>
+      ${EMPRESA.telefone || ''}<br>
+      ${EMPRESA.endereco || ''}
+    `;
+  }
+
+  if (cabecalhoPrint) {
+    cabecalhoPrint.innerHTML = `
+      <h1>${EMPRESA.nome}</h1>
+      <p>${EMPRESA.slogan || ''}</p>
+      <p>CNPJ: ${EMPRESA.cnpj}</p>
+    `;
+  }
+}
+
 // ================== INIT ==================
 document.addEventListener('DOMContentLoaded',()=>{
   renderizarServicos();
   recalcular();
+  preencherDadosEmpresa();
 });
 
 // ================== FUNÇÕES GLOBAIS (necessário para botões inline) ==================
