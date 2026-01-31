@@ -247,24 +247,25 @@ function mostrarHistorico(){
     if (orc.entradaLancada) b2.disabled = true;
 
     // 📄 PDF
-    const btnPdf = document.createElement('button');
+  const btnPdf = document.createElement('button');
 btnPdf.textContent = '📄 PDF';
 btnPdf.onclick = e => {
   e.stopPropagation();
 
-  if (typeof carregarOrcamento !== 'function') return;
+  if (typeof carregarOrcamento === 'function') {
+    carregarOrcamento(orc);
 
-  // 1️⃣ carrega orçamento na tela
-  carregarOrcamento(orc);
+    // força atualizar tabela + total
+    recalcular();
 
-  // 2️⃣ preenche logo / dados empresa
-  preencherDadosEmpresa();
+    // garante logo + dados antes de imprimir
+    preencherDadosEmpresa();
 
-  // 3️⃣ fecha o histórico
-  modalHistorico.style.display = 'none';
-
-  // 4️⃣ avisa o usuário (necessário no iOS)
-  alert('Orçamento carregado.\n\nAgora toque em "Gerar PDF / Imprimir".');
+    // pequeno delay só pra renderizar
+    setTimeout(() => {
+      window.print();
+    }, 400);
+  }
 };
 
     // 🗑️ EXCLUIR
