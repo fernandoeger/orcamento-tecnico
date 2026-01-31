@@ -90,9 +90,16 @@
         background: white !important;
       }
       /* Esconde tudo exceto o resumo final e cabeçalho */
-      body > *:not(.resumo-final):not(.cabecalho-print) {
-        display: none !important;
-      }
+      body > *:not(.resumo-final) {
+  display: none !important;
+}
+.resumo-final,
+.cabecalho-orcamento,
+.logo-empresa,
+#empresaDados {
+  display: block !important;
+  visibility: visible !important;
+}
       .resumo-final { 
         border: none; 
         padding: 0; 
@@ -252,8 +259,6 @@
   <div id="empresaDados" class="dados-empresa"></div>
 </div>
 <hr>
-    <!-- Cabeçalho para impressão (só aparece no PDF) -->
-    <div class="cabecalho-print" id="cabecalhoPrint"></div>
 
     <div class="tabela-cobranca">
         <h3>Itens Orçados</h3>
