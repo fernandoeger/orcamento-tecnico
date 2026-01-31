@@ -449,3 +449,6 @@ window.lancarSaidaNoCaixa = lancarSaidaNoCaixa;
 if (typeof carregarOrcamento === 'function') {
   window.carregarOrcamento = carregarOrcamento;
 }
+window.addEventListener('beforeprint', () => {
+  preencherDadosEmpresa();
+});
