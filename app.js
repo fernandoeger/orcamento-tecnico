@@ -189,6 +189,48 @@ function salvarOrcamento(){
 
   alert('Orçamento salvo!');
 }
+function carregarOrcamento(orc) {
+  // cliente e aparelho
+  cliente.value = orc.cliente || '';
+  descricaoAparelho.value = orc.aparelho || '';
+
+  // mão de obra
+  incluirMaoObra.checked = !!orc.maoObraIncluida;
+  valorMaoObra.value = orc.valorMaoObra || 0;
+  valorMaoObra.disabled = !incluirMaoObra.checked;
+
+  // serviços
+  document.querySelectorAll('#servicosContainer .servico-item').forEach(div => {
+    const input = div.querySelector('input[type="number"]');
+    const cb = div.querySelector('input[type="checkbox"]');
+
+    const serv = orc.servicos.find(s => s.nome === input.dataset.item);
+    if (serv) {
+      cb.checked = serv.selecionado;
+      input.disabled = !serv.selecionado;
+      input.value = serv.valor;
+    } else {
+      cb.checked = false;
+      input.disabled = true;
+      input.value = 0;
+    }
+  });
+
+  // peças
+  document.querySelectorAll('input.peca').forEach(input => {
+    const p = orc.pecas.find(x => x.nome === input.dataset.item);
+    input.value = p ? p.valor : 0;
+  });
+
+  outrosDesc.value = orc.outrosDesc || '';
+  observacoes.value = orc.observacoes || '';
+
+  // recalcula tudo
+  recalcular();
+
+  // fecha histórico
+  modalHistorico.style.display = 'none';
+}
 
 // ================== HISTÓRICO ==================
 function mostrarHistorico(){
