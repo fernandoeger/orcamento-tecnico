@@ -11,3 +11,6 @@ const EMPRESA = {
 Peças com garantia do fabricante.
 Não cobrimos danos por mau uso, água, água, quedas ou interferência de terceiros.`
 };
+
+// >>> EXPÕE A EMPRESA GLOBALMENTE (NÃO QUEBRA A IMPRESSORA)
+window.EMPRESA = EMPRESA;
