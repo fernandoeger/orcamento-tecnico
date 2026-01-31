@@ -293,3 +293,10 @@ window.mostrarHistorico = mostrarHistorico;
 window.fecharHistorico = function () {
   if (modalHistorico) modalHistorico.style.display = 'none';
 };
+// ================== EXPOR FUNÇÕES PARA USO NO HISTÓRICO ==================
+window.lancarEntradaNoCaixa = lancarEntradaNoCaixa;
+window.lancarSaidaNoCaixa = lancarSaidaNoCaixa;
+
+if (typeof carregarOrcamento === 'function') {
+  window.carregarOrcamento = carregarOrcamento;
+}
