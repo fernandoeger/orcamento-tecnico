@@ -277,7 +277,97 @@ function mostrarHistorico(){
 
   modalHistorico.style.display = 'block';
 }
+// ================== CAIXA ==================
+function calcularTotalOrcamento(orc){
+  let total = 0;
 
+  if (orc.maoObraIncluida) total += Number(orc.valorMaoObra || 0);
+
+  if (Array.isArray(orc.servicos)) {
+    orc.servicos.forEach(s => {
+      if (s.selecionado) total += Number(s.valor || 0);
+    });
+  }
+
+  if (Array.isArray(orc.pecas)) {
+    orc.pecas.forEach(p => {
+      total += Number(p.valor || 0) * 1.25;
+    });
+  }
+
+  return total;
+}
+
+function calcularTotalPecasSemLucro(orc){
+  if (!Array.isArray(orc.pecas)) return 0;
+  return orc.pecas.reduce((s,p)=>s+Number(p.valor||0),0);
+}
+
+function salvarNoCaixa(movimento){
+  const caixa = JSON.parse(localStorage.getItem('livroCaixa') || '[]');
+  caixa.unshift({
+    id: Date.now(),
+    ...movimento
+  });
+  localStorage.setItem('livroCaixa', JSON.stringify(caixa));
+}
+
+function atualizarOrcamento(orcAtualizado){
+  const lista = JSON.parse(localStorage.getItem('orcamentos') || '[]');
+  const nova = lista.map(o =>
+    o.id === orcAtualizado.id ? orcAtualizado : o
+  );
+  localStorage.setItem('orcamentos', JSON.stringify(nova));
+}
+
+function lancarSaidaNoCaixa(orc){
+  if (orc.saidaLancada) {
+    alert('Saída já lançada.');
+    return;
+  }
+
+  const valor = calcularTotalPecasSemLucro(orc);
+  if (!valor || valor <= 0) {
+    alert('Este orçamento não possui peças.');
+    return;
+  }
+
+  salvarNoCaixa({
+    tipo: 'saida',
+    descricao: `Compra de peças – ${orc.cliente || 'Cliente'}`,
+    valor,
+    data: new Date().toLocaleString('pt-BR')
+  });
+
+  orc.saidaLancada = true;
+  atualizarOrcamento(orc);
+  alert('Saída lançada no caixa.');
+}
+
+function lancarEntradaNoCaixa(orc){
+  if (orc.entradaLancada) {
+    alert('Entrada já lançada.');
+    return;
+  }
+
+  const valor = calcularTotalOrcamento(orc);
+  if (!valor || valor <= 0) {
+    alert('Orçamento sem valor.');
+    return;
+  }
+
+  salvarNoCaixa({
+    tipo: 'entrada',
+    descricao: `Pagamento – ${orc.cliente || 'Cliente'}`,
+    valor,
+    data: new Date().toLocaleString('pt-BR')
+  });
+
+  orc.entradaLancada = true;
+  orc.status = 'pago';
+  atualizarOrcamento(orc);
+  alert('Entrada lançada no caixa.');
+}
 // ================== INIT ==================
 document.addEventListener('DOMContentLoaded',()=>{
   renderizarServicos();
