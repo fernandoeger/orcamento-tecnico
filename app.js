@@ -27,6 +27,7 @@ function preencherDadosEmpresa() {
   const dados = document.getElementById('empresaDados');
   const cabecalhoPrint = document.getElementById('cabecalhoPrint');
 
+  // TELA NORMAL
   if (logo && EMPRESA.logo) {
     logo.src = EMPRESA.logo;
     logo.alt = EMPRESA.nome || '';
@@ -42,11 +43,17 @@ function preencherDadosEmpresa() {
     `;
   }
 
+  // PDF
   if (cabecalhoPrint) {
     cabecalhoPrint.innerHTML = `
-      <h1>${EMPRESA.nome || ''}</h1>
-      <p>${EMPRESA.slogan || ''}</p>
-      <p>CNPJ: ${EMPRESA.cnpj || ''}</p>
+      <div style="display:flex;align-items:center;gap:12px;justify-content:center">
+        <img src="${EMPRESA.logo}" style="max-height:70px;object-fit:contain">
+        <div>
+          <h1 style="margin:0">${EMPRESA.nome}</h1>
+          <p style="margin:2px 0">${EMPRESA.slogan || ''}</p>
+          <p style="margin:2px 0">CNPJ: ${EMPRESA.cnpj}</p>
+        </div>
+      </div>
     `;
   }
 }
