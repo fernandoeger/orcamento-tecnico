@@ -49,8 +49,6 @@ function preencherDadosEmpresa() {
   }
 }
 
-// garante cabeçalho sempre antes do PDF
-window.addEventListener('beforeprint', preencherDadosEmpresa);
 
 // ================== SERVIÇOS ==================
 function renderizarServicos() {
